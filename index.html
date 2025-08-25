@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mê cung: Người chơi vs AI (RL – đa dạng)</title>
+<style>
+  :root { --tile: 48px; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #f7f7fb;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: #222;
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+  }
+  .wrap {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #ececf1;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.06);
+    width: calc(100dvw - 24px);
+    max-width: 880px;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .hint { font-size: 13px; color: #666; }
+  canvas {
+    border-radius: 12px;
+    border: 2px solid #1daf28;
+    background: #fff;
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  button, select, label {
+    font-family: inherit;
+    font-size: 14px;
+  }
+  button {
+    border: 0;
+    background: #111;
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.secondary { background: #e9e9ef; color: #111; }
+  select {
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid #e0e0e6;
+    background: #fff;
+  }
+  .stats { display: flex; gap: 14px; font-size: 14px; flex-wrap: wrap; }
+  .dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:-2px; }
+  .blue { background:#1976d2; }
+  .red { background:#e53935; }
+  .gold { background:gold; border:1px solid #aa9300; }
+  .warn { font-size:12px; color:#d32f2f; opacity:.9; }
+
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    display: none; align-items: center; justify-content: center;
+    z-index: 999;
+  }
+  .overlay.show { display: flex; }
+  .countdown {
+    color: #fff; text-align: center;
+    user-select: none; -webkit-user-select: none;
+    padding: 24px 28px; border-radius: 16px; backdrop-filter: blur(4px);
+  }
+  .countdown .title { font-size: 22px; letter-spacing: 1px; opacity: .9; margin-bottom: 10px; }
+  .countdown .number { font-size: 84px; font-weight: 800; line-height: 1; text-shadow: 0 8px 30px rgba(0,0,0,.35); animation: pop .4s ease; }
+  @keyframes pop { from { transform: scale(.8); opacity:.2; } to { transform: scale(1); opacity:1; } }
+
+  .result-card {
+    background: #fff; color: #111; width: min(90dvw, 420px);
+    border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.2); text-align: center;
+  }
+  .result-card h3 { margin: 0 0 12px; font-size: 22px; }
+  .result-times { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 16px; font-size: 14px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: #f3f4f7; }
+  .chip .dot { margin: 0; }
+  .btns { display: flex; gap: 10px; justify-content: center; }
+  .btns .primary { background: #111; color:#fff; }
+  .btns .secondary { background: #e9e9ef; color:#111; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row">
+      <div class="stats">
+        <div><span class="dot blue"></span>Người chơi</div>
+        <div><span class="dot red"></span>"AI"</div>
+        <div><span class="dot gold"></span>Đích</div>
+      </div>
+      <div class="hint">Mẹo: bấm <b>R</b> để reset nhanh • (AI) chỉ bắt đầu khi bạn di chuyển</div>
+    </div>
+
+    <canvas id="maze"></canvas>
+
+    <div class="row">
+      <div class="stats" id="status">Sẵn sàng!</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label for="difficulty">Độ khó:</label>
+        <select id="difficulty">
+          <option value="easy">Dễ</option>
+          <option value="normal" selected>Bình thường</option>
+          <option value="hard">Khó</option>
+        </select>
+        <button id="btnStart">Bắt đầu đua</button>
+        <button id="btnShow" class="secondary">Hiện/Ẩn đường RL</button>
+      </div>
+    </div>
+
+    <div id="assetWarning" class="warn" style="display:none;">
+      Không tải được ảnh (sẽ dùng chấm màu thay thế). Kiểm tra đường dẫn ảnh.
+    </div>
+  </div>
+
+  <div id="overlay" class="overlay"></div>
+
+<script>
+/* ========= MÊ CUNG ========= */
+const START_PLAYER = {x:1, y:1};
+const START_AI     = {x:1, y:9};
+const MAZE = [
+  [1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,1,0,0,0,0,0,0,1],
+  [1,0,1,0,1,0,1,0,1,1,0,1],
+  [1,0,1,0,0,0,1,0,0,1,0,1],
+  [1,0,1,1,1,0,1,1,0,1,0,2],
+  [1,0,0,0,0,0,0,0,0,1,0,1],
+  [1,0,1,1,0,1,1,1,0,1,0,1],
+  [1,0,0,1,0,0,0,1,0,0,0,1],
+  [1,0,1,1,0,1,0,1,1,1,0,1],
+  [1,0,0,0,0,1,0,0,0,1,0,1],
+  [1,1,1,1,0,1,0,1,0,1,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1]
+];
+const COLS = MAZE[0].length;
+const ROWS = MAZE.length;
+const GOAL = findGoal(MAZE) || {x: COLS-2, y: 1};
+
+/* ========= PRESETS ĐỘ KHÓ ========= */
+const DIFFICULTY_PRESETS = {
+  easy:   { speedAiMs: 170, aiStepsPerTick: 1, showPathAlpha: 0.35 },
+  normal: { speedAiMs: 150, aiStepsPerTick: 2, showPathAlpha: 0.25 },
+  hard:   { speedAiMs: 110, aiStepsPerTick: 3, showPathAlpha: 0.12 },
+};
+let settings = { ...DIFFICULTY_PRESETS.normal };
+
+/* ========= PHẦN TỬ ========= */
+const canvas   = document.getElementById("maze");
+const statusEl = document.getElementById("status");
+const btnStart = document.getElementById("btnStart");
+const btnShow  = document.getElementById("btnShow");
+const warnEl   = document.getElementById("assetWarning");
+const wrapEl   = document.querySelector(".wrap");
+const overlay  = document.getElementById("overlay");
+const diffSel  = document.getElementById("difficulty");
+
+// Ghi nhớ độ khó lần trước
+const savedDiff = localStorage.getItem('maze:difficulty');
+if (savedDiff && DIFFICULTY_PRESETS[savedDiff]) {
+  settings = { ...DIFFICULTY_PRESETS[savedDiff] };
+  diffSel.value = savedDiff;
+}
+
+let ctx = canvas.getContext("2d");
+let DPR = 1;
+let TILE = 48;
+const TILE_MIN = 24;
+const TILE_MAX = 160;
+
+let player = {...START_PLAYER};
+let ai = {...START_AI};
+let running = false;
+let aiTimer = null;
+let showPath = false;
+let finished = false;
+let t0Player = 0, t0AI = 0;
+let countdownLock = false;
+let humanStarted = false;
+
+/* ========= ẢNH ========= */
+const playerImg = new Image(); playerImg.src = "image/student.png";
+const aiImg = new Image();     aiImg.src     = "image/angry.png";
+let playerImgOk = false, aiImgOk = false;
+playerImg.onload  = () => { playerImgOk = true; draw(); };
+aiImg.onload      = () => { aiImgOk = true; draw(); };
+playerImg.onerror = () => { warnEl.style.display = "block"; };
+aiImg.onerror     = () => { warnEl.style.display = "block"; };
+
+/* ========= TIỆN ÍCH ========= */
+function findGoal(grid){
+  for (let y=0; y<grid.length; y++)
+    for (let x=0; x<grid[y].length; x++)
+      if (grid[y][x] === 2) return {x,y};
+  return null;
+}
+function canMove(x,y){
+  return !(y<0 || y>=ROWS || x<0 || x>=COLS) && MAZE[y][x] !== 1;
+}
+
+/* ========= VẼ ========= */
+function draw(){
+  ctx.clearRect(0,0,canvas.width/DPR,canvas.height/DPR);
+
+  for (let y=0; y<ROWS; y++){
+    for (let x=0; x<COLS; x++){
+      if (MAZE[y][x] === 1) ctx.fillStyle = "#1daf28";
+      else if (MAZE[y][x] === 2) ctx.fillStyle = "#ffec8a";
+      else ctx.fillStyle = "#ffffff";
+      ctx.fillRect(x*TILE + 1, y*TILE + 1, TILE - 2, TILE - 2);
+    }
+  }
+
+  // Preview đường RL (softmax tham lam)
+  if (showPath){
+    const path = previewPathSoftmax(ai, 1200);
+    for (let i = 0; i < path.length; i++){
+      const p = path[i];
+      const alpha = Math.max(0.06, settings.showPathAlpha - i * 0.00022);
+      ctx.fillStyle = `rgba(229,57,53,${alpha})`;
+      ctx.fillRect(p.x*TILE + 6, p.y*TILE + 6, TILE - 12, TILE - 12);
+    }
+  }
+
+  drawSprite(player.x, player.y, playerImgOk ? playerImg : null, "#1976d2", { scale: 0.95, mode: "contain" });
+  drawSprite(ai.x, ai.y, aiImgOk ? aiImg : null, "#e53935", { scale: 1.15, mode: "contain" });
+}
+
+function drawSprite(x, y, img, fallbackColor, { scale = 1.0, mode = "contain", offsetFix = 0 } = {}) {
+  const box = TILE * scale;
+  if (img && img.complete && (img.naturalWidth || img.width)) {
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    const ar = iw / ih;
+    let w, h;
+    if (mode === "cover") { if (ar >= 1) { h = box; w = box * ar; } else { w = box; h = box / ar; } }
+    else { if (ar >= 1) { w = box; h = box / ar; } else { h = box; w = box * ar; } }
+    const dx = x*TILE + (TILE - w)/2 - offsetFix;
+    const dy = y*TILE + (TILE - h)/2 - offsetFix;
+    const prev = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(img, dx, dy, w, h);
+    ctx.imageSmoothingEnabled = prev;
+  } else {
+    ctx.fillStyle = fallbackColor;
+    ctx.beginPath();
+    const r = Math.min(box, TILE) * 0.33;
+    ctx.arc(x*TILE + TILE/2 - offsetFix, y*TILE + TILE/2 - offsetFix, r, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+/* ========= Q-LEARNING (đa dạng) ========= */
+const ACTIONS = [
+  {dx:0, dy:-1}, {dx:0, dy:1}, {dx:-1, dy:0}, {dx:1, dy:0}
+];
+// Q-table
+const Q = new Map();
+const sk = p => `${p.x},${p.y}`;
+function getQArr(s){ if (!Q.has(s)) Q.set(s, [0,0,0,0]); return Q.get(s); }
+
+// Hyper-params
+const ALPHA  = 0.5;
+const GAMMA  = 0.97;
+let   EPSILON= 0.15;     // random explore
+const EPS_MIN= 0.05;
+const EPS_DECAY = 0.998;
+
+// Softmax temperature
+let   TAU = 1.10;
+const TAU_MIN = 0.30;
+const TAU_DECAY = 0.997;
+
+// Shaping theo BFS
+const BASE_STEP_REWARD = -0.02;
+const SHAPE_SCALE = 0.45;
+
+// BFS distance map tới đích
+function bfsDistanceToGoal(){
+  const dist = Array.from({length: ROWS}, _ => Array(COLS).fill(Infinity));
+  const q = [GOAL];
+  dist[GOAL.y][GOAL.x] = 0;
+  while (q.length){
+    const {x,y} = q.shift();
+    for (const {dx,dy} of ACTIONS){
+      const nx = x+dx, ny = y+dy;
+      if (canMove(nx,ny) && dist[ny][nx] === Infinity){
+        dist[ny][nx] = dist[y][x] + 1;
+        q.push({x:nx,y:ny});
+      }
+    }
+  }
+  return dist;
+}
+const DIST = bfsDistanceToGoal();
+const phi = p => {
+  const d = DIST[p.y]?.[p.x];
+  return (d!==undefined && isFinite(d)) ? -d : 0;
+};
+
+// Warm start nhẹ
+(function warmStart(){
+  const BOOST = 0.15, PENALTY = -0.03;
+  for (let y=0; y<ROWS; y++){
+    for (let x=0; x<COLS; x++){
+      if (!canMove(x,y)) continue;
+      const s = sk({x,y});
+      const q = getQArr(s);
+      const dHere = DIST[y][x];
+      for (let a=0; a<4; a++){
+        const nx = x + ACTIONS[a].dx, ny = y + ACTIONS[a].dy;
+        if (!canMove(nx,ny)) { q[a] += PENALTY; continue; }
+        const dNext = DIST[ny][nx];
+        if (isFinite(dHere) && isFinite(dNext)){
+          if (dNext < dHere) q[a] += BOOST;
+          else if (dNext > dHere) q[a] += PENALTY;
+        }
+      }
+    }
+  }
+})();
+
+function validActions(pos){
+  const acts = [];
+  for (let a=0; a<4; a++){
+    const nx = pos.x + ACTIONS[a].dx, ny = pos.y + ACTIONS[a].dy;
+    if (canMove(nx,ny)) acts.push(a);
+  }
+  return acts.length ? acts : [0,1,2,3];
+}
+
+// Softmax sample trong các action hợp lệ
+function softmaxSample(q, acts, tau){
+  let maxv = -Infinity;
+  acts.forEach(a => { if (q[a] > maxv) maxv = q[a]; });
+  const exps = acts.map(a => Math.exp((q[a]-maxv) / Math.max(1e-6, tau)));
+  const sum = exps.reduce((s,v)=>s+v,0);
+  let r = Math.random() * sum;
+  for (let i=0; i<acts.length; i++){
+    r -= exps[i];
+    if (r <= 0) return acts[i];
+  }
+  return acts[acts.length-1];
+}
+
+function chooseAction(pos){
+  const acts = validActions(pos);
+  if (Math.random() < EPSILON){
+    return acts[Math.floor(Math.random()*acts.length)];
+  }
+  const q = getQArr(sk(pos));
+  return softmaxSample(q, acts, TAU);
+}
+
+function stepEnv(pos, action, visitCounts){
+  const nx = pos.x + ACTIONS[action].dx;
+  const ny = pos.y + ACTIONS[action].dy;
+  const next = {x:nx, y:ny};
+  const done = (nx===GOAL.x && ny===GOAL.y);
+
+  // reward gốc + shaping
+  let r = BASE_STEP_REWARD + SHAPE_SCALE * (GAMMA * phi(next) - phi(pos));
+  if (done) r += 1.0;
+
+  // phạt ghé lại nhiều lần
+  const key = sk(next);
+  const visits = (visitCounts.get(key) || 0) + 1;
+  r -= Math.min(0.03 * (visits-1), 0.20);
+  visitCounts.set(key, visits);
+
+  return {next, reward: r, done};
+}
+
+function updateQ(s, a, r, s2){
+  const q = getQArr(s);
+  const maxQ2 = Math.max(...getQArr(s2));
+  q[a] = q[a] + ALPHA * (r + GAMMA * maxQ2 - q[a]);
+}
+
+/* Preview đường bằng softmax */
+function previewPathSoftmax(start, limit=1000){
+  const out = [];
+  let cur = {x:start.x, y:start.y};
+  const visits = new Map([[sk(cur),1]]);
+  let tau = Math.max(0.22, TAU * 0.5);
+  for (let i=0; i<limit; i++){
+    if (cur.x===GOAL.x && cur.y===GOAL.y) break;
+    const acts = validActions(cur);
+    const q = getQArr(sk(cur));
+    const a = softmaxSample(q, acts, tau);
+    const nxt = {x:cur.x + ACTIONS[a].dx, y:cur.y + ACTIONS[a].dy};
+    const k = sk(nxt);
+    const c = (visits.get(k)||0) + 1;
+    if (c > 3) break;
+    visits.set(k, c);
+    out.push(nxt);
+    cur = nxt;
+  }
+  return out;
+}
+
+/* ========= GAME FLOW ========= */
+function resetGame(){
+  player = {...START_PLAYER};
+  ai = {...START_AI};
+  running = false;
+  finished = false;
+  if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
+  humanStarted = false;
+  t0Player = 0; t0AI = 0;
+  // reset schedule exploration
+  EPSILON = 0.15; TAU = 1.10;
+  statusEl.textContent = "Sẵn sàng!";
+  draw();
+}
+
+function startRace(){
+  running = true;
+  statusEl.textContent = "GO! Bạn di chuyển trước • AI RL sẽ chạy ngay khi bạn bước";
+  draw();
+}
+
+function startAiLoop() {
+  if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
+  t0AI = performance.now();
+
+  const visitCounts = new Map();
+  visitCounts.set(sk(ai), 1);
+
+  aiTimer = setInterval(()=>{
+    if (finished || !running){ clearInterval(aiTimer); aiTimer=null; return; }
+
+    for (let k=0; k<settings.aiStepsPerTick; k++){
+      if (finished || !running) break;
+
+      const s = sk(ai);
+      const a = chooseAction(ai);
+      const {next, reward, done} = stepEnv(ai, a, visitCounts);
+      const s2 = sk(next);
+      updateQ(s, a, reward, s2);
+
+      ai = next;
+
+      // lịch giảm ε và τ
+      EPSILON = Math.max(EPS_MIN, EPSILON * EPS_DECAY);
+      TAU     = Math.max(TAU_MIN, TAU * TAU_DECAY);
+
+      if (done){
+        finished = true;
+        running = false;
+        clearInterval(aiTimer); aiTimer=null;
+        const tPlayer = t0Player ? ((performance.now() - t0Player)/1000).toFixed(2) : "—";
+        const tAI     = t0AI ? ((performance.now() - t0AI)/1000).toFixed(2) : "—";
+        showResultPopup(false, true, tPlayer, tAI);
+        break;
+      }
+    }
+    draw();
+  }, settings.speedAiMs);
+}
+
+/* Người thắng trước */
+function checkFinishByPlayer(){
+  if (player.x===GOAL.x && player.y===GOAL.y){
+    finished = true; running = false;
+    if (aiTimer) { clearInterval(aiTimer); aiTimer=null; }
+    const tPlayer = t0Player ? ((performance.now() - t0Player)/1000).toFixed(2) : "—";
+    const tAI     = t0AI ? ((performance.now() - t0AI)/1000).toFixed(2) : "—";
+    showResultPopup(true, false, tPlayer, tAI);
+    return true;
+  }
+  return false;
+}
+
+/* ========= OVERLAY ========= */
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+async function showCountdownThenStart(){
+  countdownLock = true;
+  resetGame();
+
+  overlay.className = "overlay show";
+  overlay.innerHTML = `
+    <div class="countdown">
+      <div class="title">BẮT ĐẦU ĐUA</div>
+      <div class="number">3</div>
+    </div>
+  `;
+  const numberEl = overlay.querySelector('.number');
+  const titleEl  = overlay.querySelector('.title');
+
+  numberEl.textContent = "3"; await sleep(800);
+  numberEl.textContent = "2"; numberEl.style.animation = "none"; numberEl.offsetHeight; numberEl.style.animation = "pop .4s ease"; await sleep(800);
+  numberEl.textContent = "1"; numberEl.style.animation = "none"; numberEl.offsetHeight; numberEl.style.animation = "pop .4s ease"; await sleep(800);
+  titleEl.textContent = "";
+  numberEl.textContent = "GO!";
+  numberEl.style.animation = "none"; numberEl.offsetHeight; numberEl.style.animation = "pop .4s ease";
+
+  await sleep(450);
+  overlay.className = "overlay";
+  countdownLock = false;
+  startRace();
+}
+
+function showResultPopup(playerWin, aiWin, tPlayer, tAI){
+  let title = playerWin ? (aiWin ? "Hoà 🎉" : "Bạn thắng 🎉") : "AI thắng 🤖";
+  overlay.className = "overlay show";
+  overlay.innerHTML = `
+    <div class="result-card">
+      <h3>${title}</h3>
+      <div class="result-times">
+        <div class="chip"><span class="dot blue"></span><b>Người:</b>&nbsp;${tPlayer}s</div>
+        <div class="chip"><span class="dot red"></span><b>AI</b>&nbsp;${tAI}s</div>
+      </div>
+      <div class="btns">
+        <button class="secondary" id="btnClose">Đóng</button>
+        <button class="primary"   id="btnReplay">Chơi lại</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('btnClose').onclick = ()=>{ overlay.className = "overlay"; };
+  document.getElementById('btnReplay').onclick = ()=>{ overlay.className = "overlay"; showCountdownThenStart(); };
+}
+
+/* ========= AUTO-FIT TILE & DPI ========= */
+function resize() {
+  const rows = wrapEl.querySelectorAll('.row');
+  let rowsH = 0;
+  rows.forEach(r => rowsH += r.getBoundingClientRect().height);
+
+  const cs = getComputedStyle(wrapEl);
+  const pTop = parseFloat(cs.paddingTop);
+  const pBot = parseFloat(cs.paddingBottom);
+  const bTop = parseFloat(cs.borderTopWidth);
+  const bBot = parseFloat(cs.borderBottomWidth);
+  const wrapInnerW = wrapEl.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+
+  const availW = wrapInnerW;
+  const availH = window.innerHeight - (rowsH + pTop + pBot + bTop + bBot) - 8;
+
+  const tileCandidate = Math.floor(Math.min(availW / COLS, availH / ROWS));
+  TILE = Math.max(TILE_MIN, Math.min(TILE_MAX, tileCandidate));
+
+  const cssW = COLS * TILE;
+  const cssH = ROWS * TILE;
+
+  DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+  canvas.style.width  = cssW + "px";
+  canvas.style.height = cssH + "px";
+  canvas.width  = Math.floor(cssW * DPR);
+  canvas.height = Math.floor(cssH * DPR);
+  ctx = canvas.getContext("2d");
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  draw();
+}
+
+/* ========= INPUT ========= */
+btnStart.addEventListener("click", ()=>{ if (!countdownLock) showCountdownThenStart(); });
+btnShow.addEventListener("click", ()=>{ showPath = !showPath; draw(); });
+
+diffSel.addEventListener('change', (e) => {
+  const mode = e.target.value; // 'easy' | 'normal' | 'hard'
+  const preset = DIFFICULTY_PRESETS[mode];
+  if (!preset) return;
+  settings = { ...preset };
+  localStorage.setItem('maze:difficulty', mode);
+
+  // Nếu AI đang chạy thì khởi động lại vòng lặp theo tốc độ mới
+  if (aiTimer) {
+    startAiLoop();
+  }
+  // Cập nhật lại hiển thị đường preview theo alpha mới (nếu đang bật)
+  draw();
+});
+
+document.addEventListener("keydown", (e)=>{
+  if (e.key === "r" || e.key === "R"){
+    if (!countdownLock){ resetGame(); overlay.className="overlay"; }
+    return;
+  }
+  if (!running || finished || countdownLock) return;
+
+  const before = {x: player.x, y: player.y};
+  if (e.key === "ArrowUp")    tryMove(player, 0,-1);
+  if (e.key === "ArrowDown")  tryMove(player, 0, 1);
+  if (e.key === "ArrowLeft")  tryMove(player,-1, 0);
+  if (e.key === "ArrowRight") tryMove(player, 1, 0);
+
+  if (before.x!==player.x || before.y!==player.y){
+    if (!t0Player) t0Player = performance.now();
+    if (!humanStarted){ humanStarted = true; startAiLoop(); }
+    if (checkFinishByPlayer()) { draw(); return; }
+    draw();
+  }
+});
+window.addEventListener('resize', resize);
+
+function tryMove(p, dx, dy){
+  const nx = p.x + dx, ny = p.y + dy;
+  if (canMove(nx,ny)){ p.x = nx; p.y = ny; }
+}
+
+/* ========= INIT ========= */
+resize();
+resetGame();
+</script>
+</body>
+</html>
