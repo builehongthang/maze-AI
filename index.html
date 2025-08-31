@@ -124,7 +124,7 @@
           <option value="hard">Khó</option>
         </select>
         <button id="btnStart">Bắt đầu đua</button>
-        <button id="btnShow" class="secondary">Hiện/Ẩn đường RL</button>
+        <button id="btnShow" class="secondary">Hiện/Ẩn bước kế tiếp của AI</button>
       </div>
     </div>
 
@@ -198,6 +198,10 @@ let t0Player = 0, t0AI = 0;
 let countdownLock = false;
 let humanStarted = false;
 
+/* 👉 Biến kế hoạch để vẽ ô kế tiếp mà AI SẮP đi */
+let aiPlannedAction = null;  // 0..3 hoặc null
+let aiNextCell = null;       // {x,y} hoặc null
+
 /* ========= ẢNH ========= */
 const playerImg = new Image(); playerImg.src = "image/student.png";
 const aiImg = new Image();     aiImg.src     = "image/angry.png";
@@ -231,15 +235,16 @@ function draw(){
     }
   }
 
-  // Preview đường RL (softmax tham lam)
-  if (showPath){
-    const path = previewPathSoftmax(ai, 1200);
-    for (let i = 0; i < path.length; i++){
-      const p = path[i];
-      const alpha = Math.max(0.06, settings.showPathAlpha - i * 0.00022);
-      ctx.fillStyle = `rgba(229,57,53,${alpha})`;
-      ctx.fillRect(p.x*TILE + 6, p.y*TILE + 6, TILE - 12, TILE - 12);
-    }
+  // ✅ Chỉ vẽ Ô KẾ TIẾP mà AI sắp đi (không còn đường dài)
+  if (showPath && aiNextCell){
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#e53935";
+    ctx.strokeRect(aiNextCell.x * TILE + 5, aiNextCell.y * TILE + 5, TILE - 10, TILE - 10);
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = "#e53953";
+    ctx.fillRect(aiNextCell.x * TILE + 6, aiNextCell.y * TILE + 6, TILE - 12, TILE - 12);
+    ctx.restore();
   }
 
   drawSprite(player.x, player.y, playerImgOk ? playerImg : null, "#1976d2", { scale: 0.95, mode: "contain" });
@@ -274,7 +279,6 @@ function drawSprite(x, y, img, fallbackColor, { scale = 1.0, mode = "contain", o
 const ACTIONS = [
   {dx:0, dy:-1}, {dx:0, dy:1}, {dx:-1, dy:0}, {dx:1, dy:0}
 ];
-// Q-table
 const Q = new Map();
 const sk = p => `${p.x},${p.y}`;
 function getQArr(s){ if (!Q.has(s)) Q.set(s, [0,0,0,0]); return Q.get(s); }
@@ -282,7 +286,7 @@ function getQArr(s){ if (!Q.has(s)) Q.set(s, [0,0,0,0]); return Q.get(s); }
 // Hyper-params
 const ALPHA  = 0.5;
 const GAMMA  = 0.97;
-let   EPSILON= 0.15;     // random explore
+let   EPSILON= 0.15;
 const EPS_MIN= 0.05;
 const EPS_DECAY = 0.998;
 
@@ -349,7 +353,6 @@ function validActions(pos){
   return acts.length ? acts : [0,1,2,3];
 }
 
-// Softmax sample trong các action hợp lệ
 function softmaxSample(q, acts, tau){
   let maxv = -Infinity;
   acts.forEach(a => { if (q[a] > maxv) maxv = q[a]; });
@@ -378,11 +381,9 @@ function stepEnv(pos, action, visitCounts){
   const next = {x:nx, y:ny};
   const done = (nx===GOAL.x && ny===GOAL.y);
 
-  // reward gốc + shaping
   let r = BASE_STEP_REWARD + SHAPE_SCALE * (GAMMA * phi(next) - phi(pos));
   if (done) r += 1.0;
 
-  // phạt ghé lại nhiều lần
   const key = sk(next);
   const visits = (visitCounts.get(key) || 0) + 1;
   r -= Math.min(0.03 * (visits-1), 0.20);
@@ -390,33 +391,18 @@ function stepEnv(pos, action, visitCounts){
 
   return {next, reward: r, done};
 }
-
 function updateQ(s, a, r, s2){
   const q = getQArr(s);
   const maxQ2 = Math.max(...getQArr(s2));
   q[a] = q[a] + ALPHA * (r + GAMMA * maxQ2 - q[a]);
 }
 
-/* Preview đường bằng softmax */
-function previewPathSoftmax(start, limit=1000){
-  const out = [];
-  let cur = {x:start.x, y:start.y};
-  const visits = new Map([[sk(cur),1]]);
-  let tau = Math.max(0.22, TAU * 0.5);
-  for (let i=0; i<limit; i++){
-    if (cur.x===GOAL.x && cur.y===GOAL.y) break;
-    const acts = validActions(cur);
-    const q = getQArr(sk(cur));
-    const a = softmaxSample(q, acts, tau);
-    const nxt = {x:cur.x + ACTIONS[a].dx, y:cur.y + ACTIONS[a].dy};
-    const k = sk(nxt);
-    const c = (visits.get(k)||0) + 1;
-    if (c > 3) break;
-    visits.set(k, c);
-    out.push(nxt);
-    cur = nxt;
-  }
-  return out;
+/* 👉 Lập kế hoạch bước tới để vẽ Ô KẾ TIẾP */
+function planNextStep(){
+  const a = chooseAction(ai);
+  const nx = ai.x + ACTIONS[a].dx;
+  const ny = ai.y + ACTIONS[a].dy;
+  return { a, next: { x: nx, y: ny } };
 }
 
 /* ========= GAME FLOW ========= */
@@ -428,8 +414,9 @@ function resetGame(){
   if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
   humanStarted = false;
   t0Player = 0; t0AI = 0;
-  // reset schedule exploration
   EPSILON = 0.15; TAU = 1.10;
+  aiPlannedAction = null;
+  aiNextCell = null;
   statusEl.textContent = "Sẵn sàng!";
   draw();
 }
@@ -447,21 +434,46 @@ function startAiLoop() {
   const visitCounts = new Map();
   visitCounts.set(sk(ai), 1);
 
+  aiPlannedAction = null;
+  if (showPath && running && !finished) {
+  const plan = planNextStep();
+  aiPlannedAction = plan.a;
+  aiNextCell = plan.next;
+} else {
+  aiPlannedAction = null;
+  aiNextCell = null;
+}
+
   aiTimer = setInterval(()=>{
     if (finished || !running){ clearInterval(aiTimer); aiTimer=null; return; }
+
+    // Nếu đang bật hiển thị và chưa có kế hoạch: lập kế hoạch & vẽ ngay
+    if (showPath && !aiNextCell) {
+      const plan = planNextStep();
+      aiPlannedAction = plan.a;
+      aiNextCell = plan.next;
+      draw(); // cho người chơi thấy ô kế tiếp trước khi AI bước
+    }
 
     for (let k=0; k<settings.aiStepsPerTick; k++){
       if (finished || !running) break;
 
+      // Bước đầu dùng đúng hành động đã vẽ (nếu có)
+      let a;
+      if (aiPlannedAction !== null) {
+        a = aiPlannedAction;
+        aiPlannedAction = null;
+      } else {
+        a = chooseAction(ai);
+      }
+
       const s = sk(ai);
-      const a = chooseAction(ai);
       const {next, reward, done} = stepEnv(ai, a, visitCounts);
       const s2 = sk(next);
       updateQ(s, a, reward, s2);
 
       ai = next;
 
-      // lịch giảm ε và τ
       EPSILON = Math.max(EPS_MIN, EPSILON * EPS_DECAY);
       TAU     = Math.max(TAU_MIN, TAU * TAU_DECAY);
 
@@ -475,6 +487,10 @@ function startAiLoop() {
         break;
       }
     }
+
+    // Sau khi đã bước xong trong tick này, huỷ kế hoạch cũ
+    aiNextCell = null;
+
     draw();
   }, settings.speedAiMs);
 }
@@ -576,48 +592,97 @@ function resize() {
 
 /* ========= INPUT ========= */
 btnStart.addEventListener("click", ()=>{ if (!countdownLock) showCountdownThenStart(); });
-btnShow.addEventListener("click", ()=>{ showPath = !showPath; draw(); });
+btnShow.addEventListener("click", ()=>{ 
+  showPath = !showPath; 
+  // nếu đang chạy và bật lên thì lập kế hoạch & vẽ ngay ô kế tiếp
+  if (showPath && running && !finished) {
+    const plan = planNextStep();
+    aiPlannedAction = plan.a;
+    aiNextCell = plan.next;
+  } else if (!showPath) {
+    aiNextCell = null;
+    aiPlannedAction = null;
+  }
+  draw(); 
+});
 
 diffSel.addEventListener('change', (e) => {
-  const mode = e.target.value; // 'easy' | 'normal' | 'hard'
+  const mode = e.target.value;
   const preset = DIFFICULTY_PRESETS[mode];
   if (!preset) return;
   settings = { ...preset };
   localStorage.setItem('maze:difficulty', mode);
 
-  // Nếu AI đang chạy thì khởi động lại vòng lặp theo tốc độ mới
+  // Đổi tốc độ: khởi động lại vòng lặp nếu đang chạy
   if (aiTimer) {
     startAiLoop();
   }
-  // Cập nhật lại hiển thị đường preview theo alpha mới (nếu đang bật)
   draw();
 });
 
-document.addEventListener("keydown", (e)=>{
-  if (e.key === "r" || e.key === "R"){
-    if (!countdownLock){ resetGame(); overlay.className="overlay"; }
+/* ========= INPUT: BÀN PHÍM ========= */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "r" || e.key === "R") {
+    if (!countdownLock) { resetGame(); overlay.className = "overlay"; }
     return;
   }
   if (!running || finished || countdownLock) return;
 
-  const before = {x: player.x, y: player.y};
-  if (e.key === "ArrowUp")    tryMove(player, 0,-1);
-  if (e.key === "ArrowDown")  tryMove(player, 0, 1);
-  if (e.key === "ArrowLeft")  tryMove(player,-1, 0);
-  if (e.key === "ArrowRight") tryMove(player, 1, 0);
+  if (e.key === "ArrowUp")    { e.preventDefault?.(); movePlayer(0, -1); }
+  if (e.key === "ArrowDown")  { e.preventDefault?.(); movePlayer(0,  1); }
+  if (e.key === "ArrowLeft")  { e.preventDefault?.(); movePlayer(-1, 0); }
+  if (e.key === "ArrowRight") { e.preventDefault?.(); movePlayer(1,  0); }
+});
 
-  if (before.x!==player.x || before.y!==player.y){
+window.addEventListener("resize", resize);
+
+/* ========= INPUT: CẢM ỨNG (VUỐT) ========= */
+let touchStartX = 0, touchStartY = 0;
+const SWIPE_THRESHOLD = 20;
+
+canvas.addEventListener("touchstart", (e) => {
+  if (e.touches.length !== 1) return;
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: false });
+
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener("touchend", (e) => {
+  if (!running || finished || countdownLock) return;
+  if (e.changedTouches.length === 0) return;
+
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (dx >  SWIPE_THRESHOLD)      movePlayer(1, 0);
+    else if (dx < -SWIPE_THRESHOLD) movePlayer(-1, 0);
+  } else {
+    if (dy >  SWIPE_THRESHOLD)      movePlayer(0, 1);
+    else if (dy < -SWIPE_THRESHOLD) movePlayer(0, -1);
+  }
+}, { passive: false });
+
+/* ========= HÀM DI CHUYỂN DÙNG CHUNG ========= */
+function movePlayer(dx, dy) {
+  const before = { x: player.x, y: player.y };
+  tryMove(player, dx, dy);
+
+  if (before.x !== player.x || before.y !== player.y) {
     if (!t0Player) t0Player = performance.now();
-    if (!humanStarted){ humanStarted = true; startAiLoop(); }
+    if (!humanStarted) { humanStarted = true; startAiLoop(); }
     if (checkFinishByPlayer()) { draw(); return; }
     draw();
   }
-});
-window.addEventListener('resize', resize);
+}
 
-function tryMove(p, dx, dy){
+/* ========= THỬ DI CHUYỂN 1 Ô ========= */
+function tryMove(p, dx, dy) {
   const nx = p.x + dx, ny = p.y + dy;
-  if (canMove(nx,ny)){ p.x = nx; p.y = ny; }
+  if (canMove(nx, ny)) { p.x = nx; p.y = ny; }
 }
 
 /* ========= INIT ========= */
