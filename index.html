@@ -3,143 +3,166 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <title>Mê cung: Người chơi vs AI (RL – đa dạng)</title>
 <style>
-  :root { --tile: 48px; }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0;
-    overflow: hidden;
-    background: #f7f7fb;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    color: #222;
-    display: grid;
-    place-items: center;
-    min-height: 100dvh;
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 800px at 50% 10%, rgba(60,120,255,.08), transparent 60%),
+      radial-gradient(900px 600px at 10% 90%, rgba(0,0,0,.04), transparent 60%),
+      #eef2ff;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:#111;
+    display:grid; place-items:center; min-height:100dvh;
+    overflow:hidden; /* chặn scroll gây co canvas */
   }
-  .wrap {
-    display: grid;
-    gap: 12px;
-    padding: 16px;
-    background: #fff;
-    border: 1px solid #ececf1;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.06);
-    width: calc(100dvw - 24px);
-    max-width: 880px;
-  }
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-  .hint { font-size: 13px; color: #666; }
-  canvas {
-    border-radius: 12px;
-    border: 2px solid #1daf28;
-    background: #fff;
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-  button, select, label {
-    font-family: inherit;
-    font-size: 14px;
-  }
-  button {
-    border: 0;
-    background: #111;
-    color: #fff;
-    padding: 10px 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  button.secondary { background: #e9e9ef; color: #111; }
-  select {
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid #e0e0e6;
-    background: #fff;
-  }
-  .stats { display: flex; gap: 14px; font-size: 14px; flex-wrap: wrap; }
-  .dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:-2px; }
-  .blue { background:#1976d2; }
-  .red { background:#e53935; }
-  .gold { background:gold; border:1px solid #aa9300; }
-  .warn { font-size:12px; color:#d32f2f; opacity:.9; }
 
-  .overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,.6);
-    display: none; align-items: center; justify-content: center;
-    z-index: 999;
+  .wrap{
+    width:100dvw; height:100dvh; display:grid; place-items:center;
+    background:
+      radial-gradient(1200px 800px at 50% 10%, rgba(255,255,255,.4), transparent 60%),
+      radial-gradient(900px 500px at 10% 90%, rgba(37,99,235,.06), transparent 60%),
+      transparent;
   }
-  .overlay.show { display: flex; }
-  .countdown {
-    color: #fff; text-align: center;
-    user-select: none; -webkit-user-select: none;
-    padding: 24px 28px; border-radius: 16px; backdrop-filter: blur(4px);
-  }
-  .countdown .title { font-size: 22px; letter-spacing: 1px; opacity: .9; margin-bottom: 10px; }
-  .countdown .number { font-size: 84px; font-weight: 800; line-height: 1; text-shadow: 0 8px 30px rgba(0,0,0,.35); animation: pop .4s ease; }
-  @keyframes pop { from { transform: scale(.8); opacity:.2; } to { transform: scale(1); opacity:1; } }
 
-  .result-card {
-    background: #fff; color: #111; width: min(90dvw, 420px);
-    border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.2); text-align: center;
+  .row{ display:none !important; }
+
+  /* CHỈ JS set size; tránh CSS làm canvas tự co giãn */
+ canvas{
+  display:block;
+  background:#fff;
+  border-radius:16px;
+  border:3px solid #16a34a;
+  box-shadow:0 30px 80px rgba(0,0,0,.35);
+  /* KHÔNG đặt width:100%/height:auto để tránh méo tỉ lệ */
+}
+
+
+
+  /* ===== Overlay: intro / countdown / kết quả ===== */
+  .overlay{
+    position:fixed; inset:0;
+    background: rgba(2,6,23,.55);   /* tối trong suốt, KHÔNG có nền trắng */
+    display:none; align-items:center; justify-content:center; z-index:999;
+    backdrop-filter: blur(2px);
   }
-  .result-card h3 { margin: 0 0 12px; font-size: 22px; }
-  .result-times { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 16px; font-size: 14px; }
-  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: #f3f4f7; }
-  .chip .dot { margin: 0; }
-  .btns { display: flex; gap: 10px; justify-content: center; }
-  .btns .primary { background: #111; color:#fff; }
-  .btns .secondary { background: #e9e9ef; color:#111; }
+  .overlay.show{ display:flex; }
+
+  .countdown{
+    color:#fff; text-align:center; user-select:none;
+    padding:24px 28px; border-radius:16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
+    backdrop-filter: blur(12px);
+    border:1px solid rgba(255,255,255,.28);
+    box-shadow:0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .countdown .title{ font-size:22px; opacity:.95; margin-bottom:10px; }
+  .countdown .number{ font-size:96px; font-weight:900; line-height:1; text-shadow:0 8px 30px rgba(0,0,0,.35); animation:pop .4s ease; }
+  @keyframes pop{ from{transform:scale(.8); opacity:.2} to{transform:scale(1); opacity:1} }
+
+  .intro-card{
+    color:#fff; text-align:left; user-select:none;
+    padding:48px 56px; border-radius:28px;
+    background: linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.10));
+    backdrop-filter: blur(16px);
+    border:1px solid rgba(255,255,255,.35);
+    box-shadow: 0 24px 80px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.35);
+    display:inline-flex; align-items:center; gap:28px; max-width:95dvw;
+  }
+  .intro-card .avatar{ width:180px; height:180px; object-fit:contain;
+    background:#111; border:4px solid #fff; border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);}
+  .intro-card .line1{ font-size:42px; font-weight:900; margin-bottom:14px; text-shadow:0 6px 24px rgba(0,0,0,.35); }
+  .intro-card .line2{ font-size:26px; font-weight:800; color:#ffef7a;
+    text-shadow:0 2px 8px rgba(0,0,0,.55); animation:pulse 1.6s infinite; }
+  @keyframes pulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.04);opacity:.9}100%{transform:scale(1);opacity:1}}
+
+  .result-hero{ width:min(92dvw,520px); border-radius:20px; padding:22px;
+    color:#111; background:#fff; box-shadow:0 16px 48px rgba(0,0,0,.35); text-align:center; }
+  .result-hero .ribbon{display:inline-flex; align-items:center; gap:10px; padding:8px 14px;
+    border-radius:999px; font-weight:800; color:#fff; margin:0 auto 12px;}
+  .result-hero .ribbon.win{background:linear-gradient(135deg,#22c55e,#16a34a)}
+  .result-hero .ribbon.lose{background:linear-gradient(135deg,#f97316,#ef4444)}
+  .result-hero .ribbon.draw{background:linear-gradient(135deg,#6366f1,#06b6d4)}
+  .result-hero .title{font-size:24px; font-weight:900; margin:2px 0 6px;}
+  .result-hero .times{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0 18px;}
+  .result-hero .pill{background:#f3f4f7; border-radius:999px; padding:10px 12px;
+    display:flex; align-items:center; justify-content:center; gap:8px; font-weight:600; font-size:14px;}
+  .result-hero .pill .dot{width:10px; height:10px; border-radius:50%;}
+  .result-hero .pill .t{background:#fff; padding:4px 8px; border-radius:999px; font-weight:800;}
+  .result-hero .btns{display:flex; gap:10px; justify-content:center;}
+  .result-hero .btns button{padding:10px 14px; border-radius:10px; font-weight:800; border:0; cursor:pointer;}
+  .result-hero .btns .primary{background:#111; color:#fff;}
+  .result-hero .btns .ghost{background:#e9e9ef; color:#111;}
+  .sparkle{position:relative}
+  .sparkle:after{content:"✨"; position:absolute; right:-8px; top:-8px; animation:twinkle 1.6s infinite ease-in-out;}
+  @keyframes twinkle{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.6}}
+
+  /* Popup chọn nhân vật */
+  .char-select-overlay{ position:fixed; inset:0; display:none; z-index:998;
+    align-items:center; justify-content:center; padding:20px;
+    background:rgba(2,6,23,.55); backdrop-filter: blur(2px);}
+  .char-select-overlay.show{ display:flex; }
+  .char-select-card{ width:min(96dvw,1080px); background:#ffffff; color:#111;
+    border-radius:24px; padding:24px 28px; box-shadow:0 22px 60px rgba(0,0,0,.30); }
+  .char-select-title{ font-size:26px; font-weight:900; margin:4px 0 18px; }
+  .char-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+  .char-item{ --accent:#3b82f6; background:#f8fafc; border:2px solid var(--accent);
+    border-radius:18px; padding:16px; display:flex; flex-direction:column; align-items:center;
+    text-align:center; box-shadow:0 10px 26px rgba(0,0,0,.08); transition:transform .15s, box-shadow .15s; }
+  .char-item:hover{ transform:translateY(-3px); box-shadow:0 16px 40px rgba(0,0,0,.12); }
+  .char-badge{ position:absolute; top:12px; left:12px; padding:6px 10px; border-radius:999px; font-weight:800; font-size:12px; color:#fff; background:var(--accent);}
+  .char-thumb{ width:100px; height:100px; object-fit:contain; background:#fff; border:4px solid #fff; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.12); margin:8px 0 12px;}
+  .char-lines{ width:100%;}
+  .char-name{ font-size:20px; font-weight:900; margin-bottom:6px; color:#111; animation:namePulse 5s ease-in-out infinite;}
+  .char-desc{ font-size:14px; line-height:1.45; font-weight:600; color:#374151; animation:descPulse 1.8s ease-in-out infinite;}
+  .char-choose{ border:0; cursor:pointer; font-weight:900; border-radius:12px; padding:12px 14px; width:100%; background:var(--accent); color:#fff; margin-top:12px; }
+  @keyframes namePulse{0%,100%{transform:scale(1); color:#111}50%{transform:scale(1.08); color:var(--accent)}}
+  @keyframes descPulse{0%,100%{transform:scale(1); color:#374151}50%{transform:scale(1.05); color:#f59e0b}}
+
+  .dot{ display:inline-block; width:12px; height:12px; border-radius:50%; }
+  .blue{background:#1976d2}.red{background:#e53935}.gold{background:gold;border:1px solid #aa9300}
+
+  .score-winner { background:#dcfce7 !important; box-shadow:0 0 8px 2px #4ade80; }
+
+  /* Confetti canvas: cố định, không chiếm chỗ layout */
+  canvas.confetti-canvas{
+    position:fixed !important; inset:0 !important;
+    width:100vw !important; height:100vh !important;
+    z-index:1; pointer-events:none !important;
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="row">
-      <div class="stats">
-        <div><span class="dot blue"></span>Người chơi</div>
-        <div><span class="dot red"></span>"AI"</div>
-        <div><span class="dot gold"></span>Đích</div>
-      </div>
-      <div class="hint">Mẹo: bấm <b>R</b> để reset nhanh • (AI) chỉ bắt đầu khi bạn di chuyển</div>
-    </div>
-
+    <div class="row"><div class="stats"><div><span class="dot blue"></span>Người chơi</div><div><span class="dot red"></span>"AI"</div><div><span class="dot gold"></span>Đích</div></div></div>
     <canvas id="maze"></canvas>
-
     <div class="row">
       <div class="stats" id="status">Sẵn sàng!</div>
-      <div style="display:flex; gap:8px; align-items:center;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <label for="difficulty">Độ khó:</label>
         <select id="difficulty">
           <option value="easy">Dễ</option>
           <option value="normal" selected>Bình thường</option>
           <option value="hard">Khó</option>
         </select>
+        <span class="chip" id="rivalChip" title="Nhân vật sẽ chạy cùng bạn"><span class="dot red"></span><b>Đối thủ:</b>&nbsp;<span id="rivalName">—</span></span>
         <button id="btnStart">Bắt đầu đua</button>
         <button id="btnShow" class="secondary">Hiện/Ẩn bước kế tiếp của AI</button>
       </div>
     </div>
-
-    <div id="assetWarning" class="warn" style="display:none;">
-      Không tải được ảnh (sẽ dùng chấm màu thay thế). Kiểm tra đường dẫn ảnh.
-    </div>
   </div>
 
+  <div id="charSelect" class="char-select-overlay"></div>
   <div id="overlay" class="overlay"></div>
 
 <script>
-/* ========= MÊ CUNG ========= */
-const START_PLAYER = {x:1, y:1};
-const START_AI     = {x:1, y:9};
-const MAZE = [
+/* ========= Maze & Game ========= */
+const START_PLAYER={x:1,y:1}, START_AI={x:1,y:9};
+const MAZE=[
   [1,1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,1,0,0,0,0,0,0,1],
   [1,0,1,0,1,0,1,0,1,1,0,1],
@@ -153,541 +176,452 @@ const MAZE = [
   [1,1,1,1,0,1,0,1,0,1,0,1],
   [1,1,1,1,1,1,1,1,1,1,1,1]
 ];
-const COLS = MAZE[0].length;
-const ROWS = MAZE.length;
-const GOAL = findGoal(MAZE) || {x: COLS-2, y: 1};
+const COLS=MAZE[0].length, ROWS=MAZE.length;
+const GOAL=findGoal(MAZE)||{x:COLS-2,y:1};
 
-/* ========= PRESETS ĐỘ KHÓ ========= */
-const DIFFICULTY_PRESETS = {
-  easy:   { speedAiMs: 170, aiStepsPerTick: 1, showPathAlpha: 0.35 },
-  normal: { speedAiMs: 150, aiStepsPerTick: 2, showPathAlpha: 0.25 },
-  hard:   { speedAiMs: 110, aiStepsPerTick: 3, showPathAlpha: 0.12 },
+const DIFFICULTY_PRESETS={
+  easy  :{speedAiMs:170, aiStepsPerTick:1, showPathAlpha:0.35, rival:{name:"Bạn Rùa 'AI'",  trainedLabel:"1 ngày",  img:"image/rua.png"}},
+  normal:{speedAiMs:150, aiStepsPerTick:2, showPathAlpha:0.25, rival:{name:"Bạn Thỏ 'AI'", trainedLabel:"1 tuần",  img:"image/tho.png"}},
+  hard  :{speedAiMs:110, aiStepsPerTick:3, showPathAlpha:0.12, rival:{name:"Bạn Sói 'AI'",  trainedLabel:"1 tháng", img:"image/soi.png"}},
 };
-let settings = { ...DIFFICULTY_PRESETS.normal };
+const MODE_META={ easy:{label:"Dễ",color:"#22c55e"}, normal:{label:"Bình thường",color:"#3b82f6"}, hard:{label:"Khó",color:"#ef4444"} };
 
-/* ========= PHẦN TỬ ========= */
-const canvas   = document.getElementById("maze");
-const statusEl = document.getElementById("status");
-const btnStart = document.getElementById("btnStart");
-const btnShow  = document.getElementById("btnShow");
-const warnEl   = document.getElementById("assetWarning");
-const wrapEl   = document.querySelector(".wrap");
-const overlay  = document.getElementById("overlay");
-const diffSel  = document.getElementById("difficulty");
+let settings={...DIFFICULTY_PRESETS.normal};
 
-// Ghi nhớ độ khó lần trước
-const savedDiff = localStorage.getItem('maze:difficulty');
-if (savedDiff && DIFFICULTY_PRESETS[savedDiff]) {
-  settings = { ...DIFFICULTY_PRESETS[savedDiff] };
-  diffSel.value = savedDiff;
+const canvas=document.getElementById("maze");
+const statusEl=document.getElementById("status");
+const btnStart=document.getElementById("btnStart");
+const btnShow=document.getElementById("btnShow");
+const overlay=document.getElementById("overlay");
+const diffSel=document.getElementById("difficulty");
+const rivalNameEl=document.getElementById("rivalName");
+const charSelect=document.getElementById("charSelect");
+
+let ctx=canvas.getContext("2d"), DPR=1, TILE=48;
+const TILE_MIN=24, TILE_MAX=160;
+let player={...START_PLAYER}, ai={...START_AI};
+let running=false, aiTimer=null, showPath=false, finished=false;
+let t0Player=0,t0AI=0,tFinishPlayer=0,tFinishAI=0;
+let countdownLock=false, humanStarted=false;
+let aiPlannedAction=null, aiNextCell=null;
+let PAD=24, OX=0, OY=0;
+
+/* Images */
+const playerImg=new Image(); playerImg.src="image/student.png";
+const aiImg=new Image();
+let playerImgOk=false, aiImgOk=false;
+playerImg.onload=()=>{playerImgOk=true; draw();};
+aiImg.onload=()=>{aiImgOk=true; draw();};
+
+applyDifficulty(diffSel.value||"normal");
+
+/* ===== Utils ===== */
+function findGoal(g){ for(let y=0;y<g.length;y++) for(let x=0;x<g[y].length;x++) if(g[y][x]===2) return {x,y}; return null; }
+function canMove(x,y){ return !(y<0||y>=ROWS||x<0||x>=COLS) && MAZE[y][x]!==1; }
+
+/* ===== Draw helpers ===== */
+function roundRect(ctx, x, y, w, h, r = 8) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
 }
 
-let ctx = canvas.getContext("2d");
-let DPR = 1;
-let TILE = 48;
-const TILE_MIN = 24;
-const TILE_MAX = 160;
-
-let player = {...START_PLAYER};
-let ai = {...START_AI};
-let running = false;
-let aiTimer = null;
-let showPath = false;
-let finished = false;
-let t0Player = 0, t0AI = 0;
-let countdownLock = false;
-let humanStarted = false;
-
-/* 👉 Biến kế hoạch để vẽ ô kế tiếp mà AI SẮP đi */
-let aiPlannedAction = null;  // 0..3 hoặc null
-let aiNextCell = null;       // {x,y} hoặc null
-
-/* ========= ẢNH ========= */
-const playerImg = new Image(); playerImg.src = "image/student.png";
-const aiImg = new Image();     aiImg.src     = "image/angry.png";
-let playerImgOk = false, aiImgOk = false;
-playerImg.onload  = () => { playerImgOk = true; draw(); };
-aiImg.onload      = () => { aiImgOk = true; draw(); };
-playerImg.onerror = () => { warnEl.style.display = "block"; };
-aiImg.onerror     = () => { warnEl.style.display = "block"; };
-
-/* ========= TIỆN ÍCH ========= */
-function findGoal(grid){
-  for (let y=0; y<grid.length; y++)
-    for (let x=0; x<grid[y].length; x++)
-      if (grid[y][x] === 2) return {x,y};
-  return null;
-}
-function canMove(x,y){
-  return !(y<0 || y>=ROWS || x<0 || x>=COLS) && MAZE[y][x] !== 1;
-}
-
-/* ========= VẼ ========= */
 function draw(){
-  ctx.clearRect(0,0,canvas.width/DPR,canvas.height/DPR);
+  const CANVAS_W = canvas.width  / DPR;
+  const CANVAS_H = canvas.height / DPR;
 
+  ctx.clearRect(0,0, CANVAS_W, CANVAS_H);
+
+  // 1) Nền mê cung
   for (let y=0; y<ROWS; y++){
     for (let x=0; x<COLS; x++){
-      if (MAZE[y][x] === 1) ctx.fillStyle = "#1daf28";
-      else if (MAZE[y][x] === 2) ctx.fillStyle = "#ffec8a";
-      else ctx.fillStyle = "#ffffff";
-      ctx.fillRect(x*TILE + 1, y*TILE + 1, TILE - 2, TILE - 2);
+      const v = MAZE[y][x];
+      ctx.fillStyle = v===1 ? "#16a34a" : (v===2 ? "#ffec8a" : "#ffffff");
+      ctx.fillRect(OX + x*TILE + 1, OY + y*TILE + 1, TILE - 2, TILE - 2);
     }
   }
 
-  // ✅ Chỉ vẽ Ô KẾ TIẾP mà AI sắp đi (không còn đường dài)
+  // 2) Khung đích
+  const gx = OX + GOAL.x * TILE;
+  const gy = OY + GOAL.y * TILE;
+  ctx.save();
+  ctx.lineWidth = 6; ctx.strokeStyle = "#f59e0b";
+  ctx.strokeRect(gx+3, gy+3, TILE-6, TILE-6);
+  ctx.lineWidth = 2; ctx.strokeStyle = "#ffffff";
+  ctx.strokeRect(gx+6, gy+6, TILE-12, TILE-12);
+  ctx.restore();
+
+  // 3) Badge "ĐÍCH ĐẾN"
+  (function drawGoalBadge(){
+    const label = "ĐÍCH ĐẾN";
+    const fontPx = Math.max(14, Math.floor(TILE * 0.38));
+    ctx.font = `bold ${fontPx}px system-ui, -apple-system, Segoe UI, Roboto`;
+    const textW = ctx.measureText(label).width;
+    const padX  = Math.max(10, Math.floor(TILE * 0.18));
+    const padY  = Math.max(6,  Math.floor(TILE * 0.12));
+    const badgeW = Math.ceil(textW + padX * 2);
+    const badgeH = Math.ceil(fontPx + padY * 2);
+
+    const gap = 10, margin = 10;
+    const pulse = 0.85 + 0.5 * Math.sin(Date.now() / 300);
+
+    let bx = gx + TILE + gap;
+    let by = gy + (TILE - badgeH) / 2;
+
+    if (bx + badgeW + margin > CANVAS_W) bx = CANVAS_W - margin - badgeW;
+    const overlap = by < gy + TILE && by + badgeH > gy;
+    if (overlap) {
+      const above = gy - gap - badgeH;
+      const below = gy + TILE + gap;
+      if (above >= margin) by = above;
+      else if (below + badgeH <= CANVAS_H - margin) by = below;
+    }
+    by = Math.max(margin, Math.min(by, CANVAS_H - badgeH - margin));
+
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.shadowColor = "rgba(0,0,0,.25)";
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = "#fff9db";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#f59e0b";
+    const radius = Math.max(10, Math.floor(badgeH * 0.35));
+    roundRect(ctx, bx, by, badgeW, badgeH, radius);
+    ctx.fill(); ctx.shadowBlur = 0;
+    roundRect(ctx, bx, by, badgeW, badgeH, radius);
+    ctx.stroke();
+    ctx.fillStyle = "#111";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, bx + padX, by + badgeH / 2);
+    ctx.restore();
+  })();
+
+  // 4) Dấu bước AI
   if (showPath && aiNextCell){
     ctx.save();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#e53935";
-    ctx.strokeRect(aiNextCell.x * TILE + 5, aiNextCell.y * TILE + 5, TILE - 10, TILE - 10);
-    ctx.globalAlpha = 0.15;
-    ctx.fillStyle = "#e53953";
-    ctx.fillRect(aiNextCell.x * TILE + 6, aiNextCell.y * TILE + 6, TILE - 12, TILE - 12);
+    ctx.lineWidth = 3; ctx.strokeStyle = "#e53935";
+    ctx.strokeRect(OX + aiNextCell.x*TILE + 5, OY + aiNextCell.y*TILE + 5, TILE-10, TILE-10);
+    ctx.globalAlpha = 0.15; ctx.fillStyle = "#e53953";
+    ctx.fillRect(OX + aiNextCell.x*TILE + 6, OY + aiNextCell.y*TILE + 6, TILE-12, TILE-12);
     ctx.restore();
   }
 
+  // 5) Nhân vật
   drawSprite(player.x, player.y, playerImgOk ? playerImg : null, "#1976d2", { scale: 0.95, mode: "contain" });
-  drawSprite(ai.x, ai.y, aiImgOk ? aiImg : null, "#e53935", { scale: 1.15, mode: "contain" });
+  drawSprite(ai.x,     ai.y,     aiImgOk     ? aiImg     : null, "#e53935", { scale: 1.15, mode: "contain" });
+
+  requestAnimationFrame(draw);
 }
 
-function drawSprite(x, y, img, fallbackColor, { scale = 1.0, mode = "contain", offsetFix = 0 } = {}) {
-  const box = TILE * scale;
-  if (img && img.complete && (img.naturalWidth || img.width)) {
-    const iw = img.naturalWidth || img.width;
-    const ih = img.naturalHeight || img.height;
-    const ar = iw / ih;
-    let w, h;
-    if (mode === "cover") { if (ar >= 1) { h = box; w = box * ar; } else { w = box; h = box / ar; } }
-    else { if (ar >= 1) { w = box; h = box / ar; } else { h = box; w = box * ar; } }
-    const dx = x*TILE + (TILE - w)/2 - offsetFix;
-    const dy = y*TILE + (TILE - h)/2 - offsetFix;
-    const prev = ctx.imageSmoothingEnabled;
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(img, dx, dy, w, h);
-    ctx.imageSmoothingEnabled = prev;
-  } else {
-    ctx.fillStyle = fallbackColor;
-    ctx.beginPath();
-    const r = Math.min(box, TILE) * 0.33;
-    ctx.arc(x*TILE + TILE/2 - offsetFix, y*TILE + TILE/2 - offsetFix, r, 0, Math.PI*2);
-    ctx.fill();
+function drawSprite(x,y,img,fallback,{scale=1,mode="contain"}={}){
+  const box=TILE*scale;
+  if(img && img.complete && (img.naturalWidth||img.width)){
+    const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height, ar=iw/ih;
+    let w,h; if(mode==="cover"){ if(ar>=1){h=box; w=box*ar;} else {w=box; h=box/ar;} }
+    else { if(ar>=1){w=box; h=box/ar;} else {h=box; w=box*ar;} }
+    const dx = OX + x*TILE + (TILE - w)/2;
+    const dy = OY + y*TILE + (TILE - h)/2;
+    const prev=ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled=true;
+    ctx.drawImage(img,dx,dy,w,h); ctx.imageSmoothingEnabled=prev;
+  }else{
+    ctx.fillStyle=fallback; ctx.beginPath(); const r=Math.min(box,TILE)*.33;
+    ctx.arc(OX + x*TILE + TILE/2, OY + y*TILE + TILE/2, r, 0, Math.PI*2); ctx.fill();
   }
 }
 
-/* ========= Q-LEARNING (đa dạng) ========= */
-const ACTIONS = [
-  {dx:0, dy:-1}, {dx:0, dy:1}, {dx:-1, dy:0}, {dx:1, dy:0}
-];
-const Q = new Map();
-const sk = p => `${p.x},${p.y}`;
-function getQArr(s){ if (!Q.has(s)) Q.set(s, [0,0,0,0]); return Q.get(s); }
+/* ===== RL ===== */
+const ACTIONS=[{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}];
+const Q=new Map(); const sk=p=>`${p.x},${p.y}`; function getQArr(s){ if(!Q.has(s)) Q.set(s,[0,0,0,0]); return Q.get(s); }
+const ALPHA=.5, GAMMA=.97; let EPSILON=.15; const EPS_MIN=.05, EPS_DECAY=.998; let TAU=1.10; const TAU_MIN=.30, TAU_DECAY=.997;
+const BASE_STEP_REWARD=-.02, SHAPE_SCALE=.45;
+function bfsDistanceToGoal(){ const d=Array.from({length:ROWS},_=>Array(COLS).fill(Infinity)); const q=[GOAL]; d[GOAL.y][GOAL.x]=0;
+  while(q.length){ const {x,y}=q.shift(); for(const {dx,dy} of ACTIONS){ const nx=x+dx, ny=y+dy; if(canMove(nx,ny)&&d[ny][nx]===Infinity){ d[ny][nx]=d[y][x]+1; q.push({x:nx,y:ny}); } } }
+  return d;}
+const DIST=bfsDistanceToGoal(); const phi=p=>{const d=DIST[p.y]?.[p.x]; return (d!==undefined&&isFinite(d))?-d:0;}
+;(function warmStart(){ const BOOST=.15, PENALTY=-.03;
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){ if(!canMove(x,y)) continue;
+    const s=sk({x,y}), q=getQArr(s), dHere=DIST[y][x];
+    for(let a=0;a<4;a++){ const nx=x+ACTIONS[a].dx, ny=y+ACTIONS[a].dy; if(!canMove(nx,ny)){ q[a]+=PENALTY; continue; }
+      const dNext=DIST[ny][nx]; if(isFinite(dHere)&&isFinite(dNext)){ if(dNext<dHere) q[a]+=BOOST; else if(dNext>dHere) q[a]+=PENALTY; } } }})();
 
-// Hyper-params
-const ALPHA  = 0.5;
-const GAMMA  = 0.97;
-let   EPSILON= 0.15;
-const EPS_MIN= 0.05;
-const EPS_DECAY = 0.998;
+function validActions(p){ const A=[]; for(let a=0;a<4;a++){ const nx=p.x+ACTIONS[a].dx, ny=p.y+ACTIONS[a].dy; if(canMove(nx,ny)) A.push(a);} return A.length?A:[0,1,2,3]; }
+function softmaxSample(q,acts,tau){ let m=-Infinity; acts.forEach(a=>{if(q[a]>m)m=q[a];}); const exps=acts.map(a=>Math.exp((q[a]-m)/Math.max(1e-6,tau)));
+  const sum=exps.reduce((s,v)=>s+v,0); let r=Math.random()*sum; for(let i=0;i<acts.length;i++){ r-=exps[i]; if(r<=0) return acts[i]; } return acts[acts.length-1]; }
+function chooseAction(p){ const acts=validActions(p); if(Math.random()<EPSILON) return acts[Math.floor(Math.random()*acts.length)]; const q=getQArr(sk(p)); return softmaxSample(q,acts,TAU); }
 
-// Softmax temperature
-let   TAU = 1.10;
-const TAU_MIN = 0.30;
-const TAU_DECAY = 0.997;
-
-// Shaping theo BFS
-const BASE_STEP_REWARD = -0.02;
-const SHAPE_SCALE = 0.45;
-
-// BFS distance map tới đích
-function bfsDistanceToGoal(){
-  const dist = Array.from({length: ROWS}, _ => Array(COLS).fill(Infinity));
-  const q = [GOAL];
-  dist[GOAL.y][GOAL.x] = 0;
-  while (q.length){
-    const {x,y} = q.shift();
-    for (const {dx,dy} of ACTIONS){
-      const nx = x+dx, ny = y+dy;
-      if (canMove(nx,ny) && dist[ny][nx] === Infinity){
-        dist[ny][nx] = dist[y][x] + 1;
-        q.push({x:nx,y:ny});
-      }
-    }
-  }
-  return dist;
+function stepEnv(pos,a,visit){
+  const nx=pos.x+ACTIONS[a].dx, ny=pos.y+ACTIONS[a].dy; const next={x:nx,y:ny}; const done=(nx===GOAL.x&&ny===GOAL.y);
+  let r=BASE_STEP_REWARD + SHAPE_SCALE*(GAMMA*phi(next)-phi(pos)); if(done) r+=1;
+  const key=sk(next), v=(visit.get(key)||0)+1; r-=Math.min(.03*(v-1),.20); visit.set(key,v);
+  return {next,reward:r,done};
 }
-const DIST = bfsDistanceToGoal();
-const phi = p => {
-  const d = DIST[p.y]?.[p.x];
-  return (d!==undefined && isFinite(d)) ? -d : 0;
-};
+function updateQ(s,a,r,s2){ const q=getQArr(s); const maxQ2=Math.max(...getQArr(s2)); q[a]=q[a]+ALPHA*(r+GAMMA*maxQ2-q[a]); }
+function planNextStep(){ const a=chooseAction(ai); return {a, next:{x:ai.x+ACTIONS[a].dx, y:ai.y+ACTIONS[a].dy}}; }
 
-// Warm start nhẹ
-(function warmStart(){
-  const BOOST = 0.15, PENALTY = -0.03;
-  for (let y=0; y<ROWS; y++){
-    for (let x=0; x<COLS; x++){
-      if (!canMove(x,y)) continue;
-      const s = sk({x,y});
-      const q = getQArr(s);
-      const dHere = DIST[y][x];
-      for (let a=0; a<4; a++){
-        const nx = x + ACTIONS[a].dx, ny = y + ACTIONS[a].dy;
-        if (!canMove(nx,ny)) { q[a] += PENALTY; continue; }
-        const dNext = DIST[ny][nx];
-        if (isFinite(dHere) && isFinite(dNext)){
-          if (dNext < dHere) q[a] += BOOST;
-          else if (dNext > dHere) q[a] += PENALTY;
-        }
-      }
-    }
-  }
-})();
-
-function validActions(pos){
-  const acts = [];
-  for (let a=0; a<4; a++){
-    const nx = pos.x + ACTIONS[a].dx, ny = pos.y + ACTIONS[a].dy;
-    if (canMove(nx,ny)) acts.push(a);
-  }
-  return acts.length ? acts : [0,1,2,3];
-}
-
-function softmaxSample(q, acts, tau){
-  let maxv = -Infinity;
-  acts.forEach(a => { if (q[a] > maxv) maxv = q[a]; });
-  const exps = acts.map(a => Math.exp((q[a]-maxv) / Math.max(1e-6, tau)));
-  const sum = exps.reduce((s,v)=>s+v,0);
-  let r = Math.random() * sum;
-  for (let i=0; i<acts.length; i++){
-    r -= exps[i];
-    if (r <= 0) return acts[i];
-  }
-  return acts[acts.length-1];
-}
-
-function chooseAction(pos){
-  const acts = validActions(pos);
-  if (Math.random() < EPSILON){
-    return acts[Math.floor(Math.random()*acts.length)];
-  }
-  const q = getQArr(sk(pos));
-  return softmaxSample(q, acts, TAU);
-}
-
-function stepEnv(pos, action, visitCounts){
-  const nx = pos.x + ACTIONS[action].dx;
-  const ny = pos.y + ACTIONS[action].dy;
-  const next = {x:nx, y:ny};
-  const done = (nx===GOAL.x && ny===GOAL.y);
-
-  let r = BASE_STEP_REWARD + SHAPE_SCALE * (GAMMA * phi(next) - phi(pos));
-  if (done) r += 1.0;
-
-  const key = sk(next);
-  const visits = (visitCounts.get(key) || 0) + 1;
-  r -= Math.min(0.03 * (visits-1), 0.20);
-  visitCounts.set(key, visits);
-
-  return {next, reward: r, done};
-}
-function updateQ(s, a, r, s2){
-  const q = getQArr(s);
-  const maxQ2 = Math.max(...getQArr(s2));
-  q[a] = q[a] + ALPHA * (r + GAMMA * maxQ2 - q[a]);
-}
-
-/* 👉 Lập kế hoạch bước tới để vẽ Ô KẾ TIẾP */
-function planNextStep(){
-  const a = chooseAction(ai);
-  const nx = ai.x + ACTIONS[a].dx;
-  const ny = ai.y + ACTIONS[a].dy;
-  return { a, next: { x: nx, y: ny } };
-}
-
-/* ========= GAME FLOW ========= */
+/* ===== Flow ===== */
 function resetGame(){
-  player = {...START_PLAYER};
-  ai = {...START_AI};
-  running = false;
-  finished = false;
-  if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
-  humanStarted = false;
-  t0Player = 0; t0AI = 0;
-  EPSILON = 0.15; TAU = 1.10;
-  aiPlannedAction = null;
-  aiNextCell = null;
-  statusEl.textContent = "Sẵn sàng!";
+  player={...START_PLAYER}; ai={...START_AI};
+  running=false; finished=false;
+  if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
+  humanStarted=false;
+  t0Player=0; t0AI=0; tFinishPlayer=0; tFinishAI=0;
+  EPSILON=.15; TAU=1.10; aiPlannedAction=null; aiNextCell=null;
+  statusEl && (statusEl.textContent="Sẵn sàng!");
   draw();
 }
+function startRace(){ running=true; statusEl && (statusEl.textContent=`GO! Bạn di chuyển trước • Đối thủ: ${settings.rival?.name||"AI"}`); draw(); }
 
-function startRace(){
-  running = true;
-  statusEl.textContent = "GO! Bạn di chuyển trước • AI RL sẽ chạy ngay khi bạn bước";
-  draw();
-}
+function startAiLoop(){
+  if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
+  if(!t0AI) t0AI=performance.now();
+  const visit=new Map(); visit.set(sk(ai),1);
 
-function startAiLoop() {
-  if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
-  t0AI = performance.now();
+  aiPlannedAction=null;
+  if(showPath&&running&&!finished){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; } else { aiPlannedAction=null; aiNextCell=null; }
 
-  const visitCounts = new Map();
-  visitCounts.set(sk(ai), 1);
+  aiTimer=setInterval(()=>{
+    if(finished||!running){clearInterval(aiTimer); aiTimer=null; return;}
+    if(showPath&&!aiNextCell){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; draw(); }
 
-  aiPlannedAction = null;
-  if (showPath && running && !finished) {
-  const plan = planNextStep();
-  aiPlannedAction = plan.a;
-  aiNextCell = plan.next;
-} else {
-  aiPlannedAction = null;
-  aiNextCell = null;
-}
+    for(let k=0;k<settings.aiStepsPerTick;k++){
+      if(finished||!running) break;
+      let a; if(aiPlannedAction!==null){ a=aiPlannedAction; aiPlannedAction=null; } else { a=chooseAction(ai); }
+      const s=sk(ai); const {next,reward,done}=stepEnv(ai,a,visit); const s2=sk(next); updateQ(s,a,reward,s2);
+      ai=next; EPSILON=Math.max(.05,EPSILON*.998); TAU=Math.max(.30,TAU*.997);
 
-  aiTimer = setInterval(()=>{
-    if (finished || !running){ clearInterval(aiTimer); aiTimer=null; return; }
-
-    // Nếu đang bật hiển thị và chưa có kế hoạch: lập kế hoạch & vẽ ngay
-    if (showPath && !aiNextCell) {
-      const plan = planNextStep();
-      aiPlannedAction = plan.a;
-      aiNextCell = plan.next;
-      draw(); // cho người chơi thấy ô kế tiếp trước khi AI bước
-    }
-
-    for (let k=0; k<settings.aiStepsPerTick; k++){
-      if (finished || !running) break;
-
-      // Bước đầu dùng đúng hành động đã vẽ (nếu có)
-      let a;
-      if (aiPlannedAction !== null) {
-        a = aiPlannedAction;
-        aiPlannedAction = null;
-      } else {
-        a = chooseAction(ai);
-      }
-
-      const s = sk(ai);
-      const {next, reward, done} = stepEnv(ai, a, visitCounts);
-      const s2 = sk(next);
-      updateQ(s, a, reward, s2);
-
-      ai = next;
-
-      EPSILON = Math.max(EPS_MIN, EPSILON * EPS_DECAY);
-      TAU     = Math.max(TAU_MIN, TAU * TAU_DECAY);
-
-      if (done){
-        finished = true;
-        running = false;
-        clearInterval(aiTimer); aiTimer=null;
-        const tPlayer = t0Player ? ((performance.now() - t0Player)/1000).toFixed(2) : "—";
-        const tAI     = t0AI ? ((performance.now() - t0AI)/1000).toFixed(2) : "—";
-        showResultPopup(false, true, tPlayer, tAI);
-        break;
+      if(done){
+        finished=true; running=false; clearInterval(aiTimer); aiTimer=null;
+        if(!tFinishAI) tFinishAI=performance.now();
+        const tPlayer=(t0Player&&tFinishPlayer)?((tFinishPlayer-t0Player)/1000).toFixed(2):"—";
+        const tAI=(t0AI&&tFinishAI)?((tFinishAI-t0AI)/1000).toFixed(2):"—";
+        showResultPopup(false,true,tPlayer,tAI); break;
       }
     }
-
-    // Sau khi đã bước xong trong tick này, huỷ kế hoạch cũ
-    aiNextCell = null;
-
-    draw();
+    aiNextCell=null; draw();
   }, settings.speedAiMs);
 }
-
-/* Người thắng trước */
 function checkFinishByPlayer(){
-  if (player.x===GOAL.x && player.y===GOAL.y){
-    finished = true; running = false;
-    if (aiTimer) { clearInterval(aiTimer); aiTimer=null; }
-    const tPlayer = t0Player ? ((performance.now() - t0Player)/1000).toFixed(2) : "—";
-    const tAI     = t0AI ? ((performance.now() - t0AI)/1000).toFixed(2) : "—";
-    showResultPopup(true, false, tPlayer, tAI);
-    return true;
-  }
-  return false;
+  if(player.x===GOAL.x && player.y===GOAL.y){
+    finished=true; running=false; if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
+    if(!tFinishPlayer) tFinishPlayer=performance.now();
+    const tPlayer=(t0Player&&tFinishPlayer)?((tFinishPlayer-t0Player)/1000).toFixed(2):"—";
+    const tAI=(t0AI&&tFinishAI)?((tFinishAI-t0AI)/1000).toFixed(2):"—";
+    showResultPopup(true,false,tPlayer,tAI); return true;
+  } return false;
 }
 
-/* ========= OVERLAY ========= */
-function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+/* ===== Overlay flow ===== */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function showCountdownThenStart(){
-  countdownLock = true;
-  resetGame();
+  countdownLock=true; resetGame();
+  const name=settings.rival?.name||"AI", trained=settings.rival?.trainedLabel||"một thời gian", imgSrc=settings.rival?.img||"image/ai.png";
+  overlay.className="overlay show";
+  overlay.innerHTML=`
+    <div class="intro-card">
+      <img class="avatar" src="${imgSrc}" alt="${name}" onerror="this.style.display='none'">
+      <div class="lines">
+        <div class="line1">Tôi là <b>${name}</b></div>
+        <div class="line2">đã được huấn luyện trong ${trained}</div>
+      </div>
+    </div>`;
+  await sleep(4000);
+  overlay.innerHTML=`<div class="countdown"><div class="title">Sẵn sàng…</div><div class="number">3</div></div>`;
+  const n=overlay.querySelector('.number'); const STEP_MS=1100;
+  n.textContent="3"; await sleep(STEP_MS);
+  n.textContent="2"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(STEP_MS);
+  n.textContent="1"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(STEP_MS);
+  n.textContent="GO!"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(650);
+  overlay.className="overlay"; countdownLock=false; startRace();
+}
+
+function showResultPopup(playerWin, aiWin, tPlayer, tAI) {
+  const rivalName = settings?.rival?.name || "bạn 'AI'";
+  const outcome = playerWin && !aiWin ? "win" : (!playerWin && aiWin ? "lose" : "draw");
+
+  let ribbonText = "", title = "", emoji = "";
+  if (outcome === "win") { ribbonText="Em thắng rồi!"; title="Quá đỉnh!"; emoji="🏆"; }
+  else if (outcome === "lose") { ribbonText=`${rivalName} thắng`; title="Không sao, thử lại nhé!"; emoji="🤖"; }
+  else { ribbonText="Hoà"; title="Cân tài cân sức!"; emoji="⚖️"; }
+
+  const timeDisplay = (t) => (t && t !== "—") ? `${t}s` : "Chưa hoàn thành";
 
   overlay.className = "overlay show";
   overlay.innerHTML = `
-    <div class="countdown">
-      <div class="title">BẮT ĐẦU ĐUA</div>
-      <div class="number">3</div>
-    </div>
-  `;
-  const numberEl = overlay.querySelector('.number');
-  const titleEl  = overlay.querySelector('.title');
-
-  numberEl.textContent = "3"; await sleep(800);
-  numberEl.textContent = "2"; numberEl.style.animation = "none"; numberEl.offsetHeight; numberEl.style.animation = "pop .4s ease"; await sleep(800);
-  numberEl.textContent = "1"; numberEl.style.animation = "none"; numberEl.offsetHeight; numberEl.style.animation = "pop .4s ease"; await sleep(800);
-  titleEl.textContent = "";
-  numberEl.textContent = "GO!";
-  numberEl.style.animation = "none"; numberEl.offsetHeight; numberEl.style.animation = "pop .4s ease";
-
-  await sleep(450);
-  overlay.className = "overlay";
-  countdownLock = false;
-  startRace();
-}
-
-function showResultPopup(playerWin, aiWin, tPlayer, tAI){
-  let title = playerWin ? (aiWin ? "Hoà 🎉" : "Bạn thắng 🎉") : "AI thắng 🤖";
-  overlay.className = "overlay show";
-  overlay.innerHTML = `
-    <div class="result-card">
-      <h3>${title}</h3>
-      <div class="result-times">
-        <div class="chip"><span class="dot blue"></span><b>Người:</b>&nbsp;${tPlayer}s</div>
-        <div class="chip"><span class="dot red"></span><b>AI</b>&nbsp;${tAI}s</div>
+  <div class="result-hero ${outcome === "win" ? "sparkle" : ""}">
+    <div class="ribbon ${outcome}">${ribbonText} ${emoji}</div>
+    <div class="title">${title}</div>
+    <div class="times">
+      <div class="pill ${playerWin ? 'score-winner' : ''}">
+        <span class="dot blue"></span>
+        <span>Người</span>
+        <span class="t">${timeDisplay(tPlayer)}</span>
       </div>
-      <div class="btns">
-        <button class="secondary" id="btnClose">Đóng</button>
-        <button class="primary"   id="btnReplay">Chơi lại</button>
+      <div class="pill ${aiWin ? 'score-winner' : ''}">
+        <span class="dot red"></span>
+        <span>${settings?.rival?.name || "AI"}</span>
+        <span class="t">${timeDisplay(tAI)}</span>
       </div>
     </div>
-  `;
-  document.getElementById('btnClose').onclick = ()=>{ overlay.className = "overlay"; };
-  document.getElementById('btnReplay').onclick = ()=>{ overlay.className = "overlay"; showCountdownThenStart(); };
+    <div class="btns">
+      <button class="ghost" id="btnClose">Đóng</button>
+      <button class="primary" id="btnReplay">Chơi lại</button>
+    </div>
+  </div>`;
+
+  document.getElementById('btnClose').onclick = () => { overlay.className = "overlay"; };
+  document.getElementById('btnReplay').onclick = () => { overlay.className = "overlay"; showCountdownThenStart(); };
+
+  if (outcome === "win") {
+    const sparkleEl = overlay.querySelector(".sparkle");
+    if (sparkleEl) sparkleEl.style.animation = "pop 1s ease";
+    setTimeout(() => { sparkleEl?.classList.add("twinkle"); }, 800);
+
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    const duration = 2000, end = Date.now() + duration;
+    const itv = setInterval(() => {
+      if (Date.now() > end) return clearInterval(itv);
+      confetti({ particleCount: 30, spread: 60, origin: { x: Math.random(), y: Math.random()*0.5 } });
+    }, 250);
+  }
 }
 
-/* ========= AUTO-FIT TILE & DPI ========= */
-function resize() {
-  const rows = wrapEl.querySelectorAll('.row');
-  let rowsH = 0;
-  rows.forEach(r => rowsH += r.getBoundingClientRect().height);
+function resize(){
+  const VW = window.innerWidth;
+  const VH = window.innerHeight;
+  const MARGIN = 32;                 // khoảng chừa viền ngoài
+  const maxW = VW - MARGIN;
+  const maxH = VH - MARGIN;
 
-  const cs = getComputedStyle(wrapEl);
-  const pTop = parseFloat(cs.paddingTop);
-  const pBot = parseFloat(cs.paddingBottom);
-  const bTop = parseFloat(cs.borderTopWidth);
-  const bBot = parseFloat(cs.borderBottomWidth);
-  const wrapInnerW = wrapEl.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  // Tìm TILE lớn nhất sao cho canvas lọt vừa viewport
+  function fit(maxW, maxH){
+    let tile = TILE_MAX;
+    let pad, w, h;
+    while (tile >= TILE_MIN){
+      pad = Math.max(24, Math.floor(tile * 1.1));
+      w = COLS * tile + pad * 2;
+      h = ROWS * tile + pad * 2;
+      if (w <= maxW && h <= maxH) break;
+      tile--;
+    }
+    return { tile: Math.max(tile, TILE_MIN), pad, w, h };
+  }
 
-  const availW = wrapInnerW;
-  const availH = window.innerHeight - (rowsH + pTop + pBot + bTop + bBot) - 8;
+  const { tile, pad, w, h } = fit(maxW, maxH);
+  TILE = tile;
+  PAD  = pad;
 
-  const tileCandidate = Math.floor(Math.min(availW / COLS, availH / ROWS));
-  TILE = Math.max(TILE_MIN, Math.min(TILE_MAX, tileCandidate));
+  // Kích thước canvas hiển thị (CSS px)
+  const cssW = w;
+  const cssH = h;
 
-  const cssW = COLS * TILE;
-  const cssH = ROWS * TILE;
-
+  // Kích thước vẽ thật (device pixels)
   DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
   canvas.style.width  = cssW + "px";
   canvas.style.height = cssH + "px";
   canvas.width  = Math.floor(cssW * DPR);
   canvas.height = Math.floor(cssH * DPR);
+
+  // Gốc vẽ mê cung
+  OX = PAD;
+  OY = PAD;
+
   ctx = canvas.getContext("2d");
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-
   draw();
 }
 
-/* ========= INPUT ========= */
-btnStart.addEventListener("click", ()=>{ if (!countdownLock) showCountdownThenStart(); });
-btnShow.addEventListener("click", ()=>{ 
-  showPath = !showPath; 
-  // nếu đang chạy và bật lên thì lập kế hoạch & vẽ ngay ô kế tiếp
-  if (showPath && running && !finished) {
-    const plan = planNextStep();
-    aiPlannedAction = plan.a;
-    aiNextCell = plan.next;
-  } else if (!showPath) {
-    aiNextCell = null;
-    aiPlannedAction = null;
-  }
-  draw(); 
+
+/* ===== Character select ===== */
+function setDifficulty(mode){
+  const p=DIFFICULTY_PRESETS[mode]||DIFFICULTY_PRESETS.normal;
+  settings={...p};
+  diffSel && (diffSel.value=mode);
+  localStorage.setItem('maze:difficulty',mode);
+  applyDifficulty(mode);
+}
+function renderCharSelect(){
+  const modes=['easy','normal','hard'];
+  charSelect.innerHTML=`<div class="char-select-card">
+    <div class="char-select-title">Chọn 1 bạn 'AI' để thi đấu THOÁT KHỎI MÊ CUNG</div>
+    <div class="char-grid">
+      ${modes.map(m=>{
+        const r=DIFFICULTY_PRESETS[m].rival, meta=MODE_META[m];
+        return `<div class="char-item" style="--accent:${meta.color}; position:relative;">
+          <div class="char-badge">${meta.label}</div>
+          <img class="char-thumb" src="${r.img}" alt="${r.name}" onerror="this.style.display='none'"/>
+          <div class="char-lines">
+            <div class="char-name">${r.name}</div>
+            <div class="char-desc">Đã được huấn luyện trong ${r.trainedLabel}</div>
+          </div>
+          <button class="char-choose" data-mode="${m}">Chọn</button>
+        </div>`}).join('')}
+    </div></div>`;
+}
+function openCharSelect(){ renderCharSelect(); charSelect.className='char-select-overlay show'; }
+charSelect.addEventListener('click',e=>{ if(e.target===charSelect) charSelect.className='char-select-overlay'; });
+charSelect.addEventListener('click',e=>{
+  const btn=e.target.closest('.char-choose'); if(!btn) return;
+  const mode=btn.getAttribute('data-mode'); setDifficulty(mode);
+  charSelect.className='char-select-overlay';
+  if(!countdownLock) showCountdownThenStart();
 });
+function applyDifficulty(mode){
+  const p=DIFFICULTY_PRESETS[mode]||DIFFICULTY_PRESETS.normal;
+  settings={...p};
+  rivalNameEl && (rivalNameEl.textContent=settings.rival?.name||"AI");
+  aiImgOk=false; aiImg.src=settings.rival?.img || "image/angry.png";
+}
 
-diffSel.addEventListener('change', (e) => {
-  const mode = e.target.value;
-  const preset = DIFFICULTY_PRESETS[mode];
-  if (!preset) return;
-  settings = { ...preset };
-  localStorage.setItem('maze:difficulty', mode);
+/* ===== Inputs ===== */
+btnStart && btnStart.addEventListener("click", ()=>{ if(!countdownLock) openCharSelect(); });
+btnShow && btnShow.addEventListener("click", ()=>{ showPath=!showPath; if(showPath&&running&&!finished){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; } else { aiNextCell=null; aiPlannedAction=null; } draw(); });
+diffSel && diffSel.addEventListener('change', e=>{ const mode=e.target.value; setDifficulty(mode); if(aiTimer) startAiLoop(); draw(); });
 
-  // Đổi tốc độ: khởi động lại vòng lặp nếu đang chạy
-  if (aiTimer) {
-    startAiLoop();
-  }
-  draw();
-});
-
-/* ========= INPUT: BÀN PHÍM ========= */
-document.addEventListener("keydown", (e) => {
-  if (e.key === "r" || e.key === "R") {
-    if (!countdownLock) { resetGame(); overlay.className = "overlay"; }
+document.addEventListener("keydown", (e)=>{
+  if(e.key==="r"||e.key==="R"){ e.preventDefault?.();
+    if(!countdownLock){ resetGame(); openCharSelect(); overlay.className="overlay"; }
     return;
   }
-  if (!running || finished || countdownLock) return;
-
-  if (e.key === "ArrowUp")    { e.preventDefault?.(); movePlayer(0, -1); }
-  if (e.key === "ArrowDown")  { e.preventDefault?.(); movePlayer(0,  1); }
-  if (e.key === "ArrowLeft")  { e.preventDefault?.(); movePlayer(-1, 0); }
-  if (e.key === "ArrowRight") { e.preventDefault?.(); movePlayer(1,  0); }
+  if(!running||finished||countdownLock) return;
+  if(e.key==="ArrowUp"){e.preventDefault?.(); movePlayer(0,-1)}
+  if(e.key==="ArrowDown"){e.preventDefault?.(); movePlayer(0, 1)}
+  if(e.key==="ArrowLeft"){e.preventDefault?.(); movePlayer(-1,0)}
+  if(e.key==="ArrowRight"){e.preventDefault?.(); movePlayer(1, 0)}
 });
 
 window.addEventListener("resize", resize);
 
-/* ========= INPUT: CẢM ỨNG (VUỐT) ========= */
-let touchStartX = 0, touchStartY = 0;
-const SWIPE_THRESHOLD = 20;
+/* Touch */
+let touchStartX=0,touchStartY=0; const SWIPE=20;
+canvas.addEventListener("touchstart",e=>{ if(e.touches.length!==1) return; touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; },{passive:false});
+canvas.addEventListener("touchmove",e=>{ e.preventDefault(); },{passive:false});
+canvas.addEventListener("touchend",e=>{
+  if(!running||finished||countdownLock) return; if(e.changedTouches.length===0) return;
+  const dx=e.changedTouches[0].clientX-touchStartX, dy=e.changedTouches[0].clientY-touchStartY;
+  if(Math.abs(dx)>Math.abs(dy)){ if(dx> SWIPE) movePlayer(1,0); else if(dx<-SWIPE) movePlayer(-1,0); }
+  else { if(dy> SWIPE) movePlayer(0,1); else if(dy<-SWIPE) movePlayer(0,-1); }
+},{passive:false});
 
-canvas.addEventListener("touchstart", (e) => {
-  if (e.touches.length !== 1) return;
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-}, { passive: false });
-
-canvas.addEventListener("touchmove", (e) => {
-  e.preventDefault();
-}, { passive: false });
-
-canvas.addEventListener("touchend", (e) => {
-  if (!running || finished || countdownLock) return;
-  if (e.changedTouches.length === 0) return;
-
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  const dy = e.changedTouches[0].clientY - touchStartY;
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    if (dx >  SWIPE_THRESHOLD)      movePlayer(1, 0);
-    else if (dx < -SWIPE_THRESHOLD) movePlayer(-1, 0);
-  } else {
-    if (dy >  SWIPE_THRESHOLD)      movePlayer(0, 1);
-    else if (dy < -SWIPE_THRESHOLD) movePlayer(0, -1);
-  }
-}, { passive: false });
-
-/* ========= HÀM DI CHUYỂN DÙNG CHUNG ========= */
-function movePlayer(dx, dy) {
-  const before = { x: player.x, y: player.y };
-  tryMove(player, dx, dy);
-
-  if (before.x !== player.x || before.y !== player.y) {
-    if (!t0Player) t0Player = performance.now();
-    if (!humanStarted) { humanStarted = true; startAiLoop(); }
-    if (checkFinishByPlayer()) { draw(); return; }
+/* Move */
+function movePlayer(dx,dy){
+  const before={x:player.x,y:player.y}; tryMove(player,dx,dy);
+  if(before.x!==player.x||before.y!==player.y){
+    if(!t0Player) t0Player=performance.now();
+    if(!humanStarted){ humanStarted=true; startAiLoop(); }
+    if(checkFinishByPlayer()){ draw(); return; }
     draw();
   }
 }
+function tryMove(p,dx,dy){ const nx=p.x+dx, ny=p.y+dy; if(canMove(nx,ny)){ p.x=nx; p.y=ny; } }
 
-/* ========= THỬ DI CHUYỂN 1 Ô ========= */
-function tryMove(p, dx, dy) {
-  const nx = p.x + dx, ny = p.y + dy;
-  if (canMove(nx, ny)) { p.x = nx; p.y = ny; }
-}
-
-/* ========= INIT ========= */
-resize();
-resetGame();
+/* Init */
+resize(); resetGame(); openCharSelect();
 </script>
 </body>
 </html>
