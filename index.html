@@ -5,174 +5,657 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <title>Mê cung: Người chơi vs AI (RL – đa dạng)</title>
+  <title>Thoát khỏi mê cung cùng với AI</title>
   <style>
-    * { box-sizing: border-box }
-    html, body { height: 100% }
-    body{
-      margin:0;
-      background:
-        radial-gradient(1200px 800px at 50% 10%, rgba(60,120,255,.08), transparent 60%),
-        radial-gradient(900px 600px at 10% 90%, rgba(0,0,0,.04), transparent 60%),
-        #eef2ff;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      color:#111; display:grid; place-items:center; min-height:100dvh; overflow:hidden;
+    * {
+      box-sizing: border-box
     }
-    .wrap{
-      width:100dvw; height:100dvh; display:grid; place-items:center;
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
       background:
-        radial-gradient(1200px 800px at 50% 10%, rgba(255,255,255,.4), transparent 60%),
-        radial-gradient(900px 500px at 10% 90%, rgba(37,99,235,.06), transparent 60%),
+        radial-gradient(1200px 800px at 50% 10%, rgba(60, 120, 255, .08), transparent 60%),
+        radial-gradient(900px 600px at 10% 90%, rgba(0, 0, 0, .04), transparent 60%),
+        #eef2ff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #111;
+      display: grid;
+      place-items: center;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+
+    .wrap {
+      width: 100dvw;
+      height: 100dvh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(1200px 800px at 50% 10%, rgba(255, 255, 255, .4), transparent 60%),
+        radial-gradient(900px 500px at 10% 90%, rgba(37, 99, 235, .06), transparent 60%),
         transparent;
     }
-    .row{ display:none !important; }
+
+    .row {
+      display: none !important;
+    }
 
     /* Canvas game */
-    canvas{ display:block; background:#fff; border-radius:16px; border:3px solid #16a34a;
-      box-shadow:0 30px 80px rgba(0,0,0,.35);
+    canvas {
+      display: block;
+      background: #fff;
+      border-radius: 16px;
+      border: 3px solid #16a34a;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, .35);
     }
 
     /* ===== Overlay ===== */
-    .overlay{
-      position:fixed; inset:0; background: rgba(2,6,23,.55);
-      display:none; align-items:center; justify-content:center; z-index:999;
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, .55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
       backdrop-filter: blur(2px);
     }
-    .overlay.show{ display:flex; }
-    .countdown{
-      color:#fff; text-align:center; user-select:none;
-      padding:24px 28px; border-radius:16px;
-      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
-      border:1px solid rgba(255,255,255,.28);
-      box-shadow:0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.25);
-    }
-    .countdown .title{ font-size:22px; opacity:.95; margin-bottom:10px; }
-    .countdown .number{ font-size:96px; font-weight:900; line-height:1; text-shadow:0 8px 30px rgba(0,0,0,.35); animation:pop .4s ease; }
-    @keyframes pop{ from{transform:scale(.8); opacity:.2} to{transform:scale(1); opacity:1} }
 
-    .intro-card{
-      color:#fff; text-align:left; user-select:none;
-      padding:48px 56px; border-radius:28px;
-      background: linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.10));
-      border:1px solid rgba(255,255,255,.35);
-      box-shadow: 0 24px 80px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.35);
-      display:inline-flex; align-items:center; gap:28px; max-width:95dvw;
+    .overlay.show {
+      display: flex;
     }
-    .intro-card .avatar{ width:300px; height:300px; object-fit:contain;
-      background:#111; border:4px solid #fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.5);}
-    .intro-card .line1{ font-size:42px; font-weight:900; margin-bottom:14px; text-shadow:0 6px 24px rgba(0,0,0,.35); }
-    .intro-card .line2{ font-size:26px; font-weight:800; color:#ffef7a;
-      text-shadow:0 2px 8px rgba(0,0,0,.55); animation:pulse 1.6s infinite; }
-    @keyframes pulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.04);opacity:.9}100%{transform:scale(1);opacity:1}}
+
+    .countdown {
+      color: #fff;
+      text-align: center;
+      user-select: none;
+      padding: 24px 28px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .18), rgba(255, 255, 255, .08));
+      border: 1px solid rgba(255, 255, 255, .28);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .25);
+    }
+
+    .countdown .title {
+      font-size: 22px;
+      opacity: .95;
+      margin-bottom: 10px;
+    }
+
+    .countdown .number {
+      font-size: 96px;
+      font-weight: 900;
+      line-height: 1;
+      text-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+      animation: pop .4s ease;
+    }
+
+    @keyframes pop {
+      from {
+        transform: scale(.8);
+        opacity: .2
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1
+      }
+    }
+
+    .intro-card {
+      color: #fff;
+      text-align: left;
+      user-select: none;
+      padding: 48px 56px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .10));
+      border: 1px solid rgba(255, 255, 255, .35);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .50), inset 0 1px 0 rgba(255, 255, 255, .35);
+      display: inline-flex;
+      align-items: center;
+      gap: 28px;
+      max-width: 95dvw;
+    }
+
+    .intro-card .avatar {
+      width: 300px;
+      height: 300px;
+      object-fit: contain;
+      background: #111;
+      border: 4px solid #fff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    }
+
+    .intro-card .line1 {
+      font-size: 42px;
+      font-weight: 900;
+      margin-bottom: 14px;
+      text-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+    }
+
+    .intro-card .line2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffef7a;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, .55);
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 1
+      }
+
+      50% {
+        transform: scale(1.04);
+        opacity: .9
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1
+      }
+    }
 
     /* ===== Result Popup ===== */
-    .result-hero{ width:min(92dvw,900px); border-radius:24px; padding:32px;
-      color:#111; background:#fff; box-shadow:0 16px 48px rgba(0,0,0,.35); text-align:center; }
-    .result-hero .ribbon{display:inline-flex; align-items:center; gap:10px; padding:8px 14px;
-      border-radius:999px; font-weight:800; color:#fff; margin:0 auto 12px;}
-    .result-hero .ribbon.win{background:linear-gradient(135deg,#22c55e,#16a34a)}
-    .result-hero .ribbon.lose{background:linear-gradient(135deg,#f97316,#ef4444)}
-    .result-hero .ribbon.draw{background:linear-gradient(135deg,#6366f1,#06b6d4)}
-    .result-hero .title{font-size:24px; font-weight:900; margin:2px 0 12px;}
-
-    .result-hero .times{
-      display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:0 0 18px;
+    .result-hero {
+      width: min(92dvw, 900px);
+      border-radius: 24px;
+      padding: 32px;
+      color: #111;
+      background: #fff;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, .35);
+      text-align: center;
     }
-    @media (max-width:640px){ .result-hero .times{ grid-template-columns:1fr; } }
 
-    .result-hero .pill{
-      background:#f8fafc; border-radius:16px;
-      padding:14px 12px; display:flex; flex-direction:column; align-items:center; gap:10px;
+    .result-hero .ribbon {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      color: #fff;
+      margin: 0 auto 12px;
     }
-    .result-hero .pill .who{ display:flex; align-items:center; gap:10px; font-weight:800; }
+
+    .result-hero .ribbon.win {
+      background: linear-gradient(135deg, #22c55e, #16a34a)
+    }
+
+    .result-hero .ribbon.lose {
+      background: linear-gradient(135deg, #f97316, #ef4444)
+    }
+
+    .result-hero .ribbon.draw {
+      background: linear-gradient(135deg, #6366f1, #06b6d4)
+    }
+
+    .result-hero .title {
+      font-size: 24px;
+      font-weight: 900;
+      margin: 2px 0 12px;
+    }
+
+    .result-hero .times {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 0 0 18px;
+    }
+
+    @media (max-width:640px) {
+      .result-hero .times {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .result-hero .pill {
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .result-hero .pill .who {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+    }
+
     .result-hero .pill .avatar {
-      width: 60px; height: 60px; border-radius: 12px;
-      object-fit: contain; background: #fff;
-      border: 2px solid #e5e7eb; box-shadow: 0 2px 6px rgba(0,0,0,.10);
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      object-fit: contain;
+      background: #fff;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .10);
     }
 
-    .result-hero .pill .t{
-      background:#111; color:#fff; padding:8px 14px; border-radius:999px; font-weight:800; font-size:18px;
+    .result-hero .pill .t {
+      background: #111;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 18px;
     }
-    .result-hero .pill .t-pending{ background:#e8eef6; color:#334155; }
 
-    .score-winner{
-      box-shadow:0 0 0 3px #dcfce7 inset, 0 0 8px 2px #4ade80; background:#f6fffb !important;
+    .result-hero .pill .t-pending {
+      background: #e8eef6;
+      color: #334155;
     }
 
-    .result-hero .btns{display:flex; gap:10px; justify-content:center;}
-    .result-hero .btns button{padding:10px 14px; border-radius:10px; font-weight:800; border:0; cursor:pointer;}
-    .result-hero .btns .primary{background:#111; color:#fff;}
-    .result-hero .btns .ghost{background:#e9e9ef; color:#111;}
-    .sparkle{position:relative}
-    .sparkle:after{content:"✨"; position:absolute; right:-8px; top:-8px; animation:twinkle 1.6s infinite ease-in-out;}
-    @keyframes twinkle{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.6}}
+    .score-winner {
+      box-shadow: 0 0 0 3px #dcfce7 inset, 0 0 8px 2px rgb(216, 255, 44);
+      background: #f2c85a !important;
+    }
+
+    .result-hero .btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .result-hero .btns button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .result-hero .btns .primary {
+      background: #111;
+      color: #fff;
+    }
+
+    .result-hero .btns .ghost {
+      background: #e9e9ef;
+      color: #111;
+    }
+
+    .sparkle {
+      position: relative
+    }
+
+    .sparkle:after {
+      content: "✨";
+      position: absolute;
+      right: -8px;
+      top: -8px;
+      animation: twinkle 1.6s infinite ease-in-out;
+    }
+
+    @keyframes twinkle {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1
+      }
+
+      50% {
+        transform: scale(1.3);
+        opacity: .6
+      }
+    }
 
     /* ===== Character select ===== */
-    .char-select-overlay{ position:fixed; inset:0; display:none; z-index:998;
-      align-items:center; justify-content:center; padding:20px;
-      background:rgba(2,6,23,.55); backdrop-filter: blur(2px);}
-    .char-select-overlay.show{ display:flex; }
-    .char-select-card{ width:min(96dvw,1100px); background:#ffffff; color:#111;
-      border-radius:24px; padding:24px 28px; box-shadow:0 22px 60px rgba(0,0,0,.30); }
-    .char-select-title{ font-size:26px; font-weight:900; margin:4px 0 6px; }
-    .char-select-sub{ color:#4b5563; margin-bottom:18px; font-weight:600; }
-    .char-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
-    .char-item{ --accent:#3b82f6; background:#f8fafc; border:2px solid var(--accent);
-      border-radius:18px; padding:16px; display:flex; flex-direction:column; align-items:center;
-      text-align:center; box-shadow:0 10px 26px rgba(0,0,0,.08); transition:transform .15s, box-shadow .15s; position:relative;}
-    .char-item:hover{ transform:translateY(-3px); box-shadow:0 16px 40px rgba(0,0,0,.12); }
-    .char-badge{ position:absolute; top:12px; left:12px; padding:6px 10px; border-radius:999px; font-weight:800; font-size:12px; color:#fff; background:var(--accent);}
-    .char-thumb{ width:120px; height:120px; object-fit:contain; background:#fff; border:4px solid #fff; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.12); margin:8px 0 12px;}
-    .char-lines{ width:100%;}
-    .char-name{ font-size:20px; font-weight:900; margin-bottom:6px; color:#111; animation:namePulse 5s ease-in-out infinite;}
-    .char-desc{ font-size:14px; line-height:1.45; font-weight:600; color:#374151; animation:descPulse 1.8s ease-in-out infinite;}
-    .char-choose{ border:0; cursor:pointer; font-weight:900; border-radius:12px; padding:12px 14px; width:100%; background:var(--accent); color:#fff; margin-top:12px; }
-    @keyframes namePulse{0%,100%{transform:scale(1); color:#111}50%{transform:scale(1.08); color:var(--accent)}}
-    @keyframes descPulse{0%,100%{transform:scale(1); color:#374151}50%{transform:scale(1.05); color:#f59e0b}}
+    .char-select-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 998;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(2, 6, 23, .55);
+      backdrop-filter: blur(2px);
+    }
 
-    .dot{ display:inline-block; width:12px; height:12px; border-radius:50%; }
-    .blue{background:#1976d2}.red{background:#e53935}.purple{background:#7c3aed}.gold{background:gold;border:1px solid #aa9300}
+    .char-select-overlay.show {
+      display: flex;
+    }
+
+    .char-select-card {
+      width: min(96dvw, 1100px);
+      background: #ffffff;
+      color: #111;
+      border-radius: 24px;
+      padding: 24px 28px;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, .30);
+    }
+
+    .char-select-title {
+      font-size: 26px;
+      font-weight: 900;
+      margin: 4px 0 6px;
+    }
+
+    .char-select-sub {
+      color: #4b5563;
+      margin-bottom: 18px;
+      font-weight: 600;
+    }
+
+    .char-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .char-item {
+      --accent: #3b82f6;
+      background: #f8fafc;
+      border: 2px solid var(--accent);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, .08);
+      transition: transform .15s, box-shadow .15s;
+      position: relative;
+    }
+
+    .char-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .12);
+    }
+
+    .char-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 12px;
+      color: #fff;
+      background: var(--accent);
+    }
+
+    .char-thumb {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      background: #fff;
+      border: 4px solid #fff;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+      margin: 8px 0 12px;
+    }
+
+    .char-lines {
+      width: 100%;
+    }
+
+    .char-name {
+      font-size: 20px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      color: #111;
+      animation: namePulse 5s ease-in-out infinite;
+    }
+
+    .char-desc {
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 600;
+      color: #374151;
+      animation: descPulse 1.8s ease-in-out infinite;
+    }
+
+    .char-choose {
+      border: 0;
+      cursor: pointer;
+      font-weight: 900;
+      border-radius: 12px;
+      padding: 12px 14px;
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      margin-top: 12px;
+    }
+
+    @keyframes namePulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        color: #111
+      }
+
+      50% {
+        transform: scale(1.08);
+        color: var(--accent)
+      }
+    }
+
+    @keyframes descPulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        color: #374151
+      }
+
+      50% {
+        transform: scale(1.05);
+        color: #f59e0b
+      }
+    }
+
+    .dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .blue {
+      background: #1976d2
+    }
+
+    .red {
+      background: #e53935
+    }
+
+    .purple {
+      background: #7c3aed
+    }
+
+    .gold {
+      background: gold;
+      border: 1px solid #aa9300
+    }
 
     /* gender chooser */
-    .dual-columns{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-    .dual-card{background:#f8fafc;border:2px solid #cbd5e1;border-radius:18px;padding:16px;box-shadow:0 10px 26px rgba(0,0,0,.06)}
-    .dual-title{display:inline-block;background:#111;color:#fff;border-radius:999px;padding:6px 10px;font-weight:800;font-size:12px}
-    .dual-name{font-size:22px;font-weight:900;margin:10px 0 2px;text-align:center}
-    .dual-keys{color:#a16207;font-weight:700;text-align:center;margin-bottom:10px}
-    .gender-row{display:flex;gap:10px;justify-content:center;margin-top:12px}
-    .gender-btn{flex:1;border:2px solid #3b82f6;background:#e0ecff;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}
-    .gender-btn.is-selected{background:#3b82f6;color:#fff}
-    .dual-thumb{
-      width:128px;height:128px;margin:14px auto 8px;
-      border:4px solid #fff;border-radius:18px;
-      background:#fff center/contain no-repeat;
-      box-shadow:0 8px 24px rgba(0,0,0,.12);
-      transition:transform .15s ease, box-shadow .15s ease, background-image .08s linear;
-      will-change:background-image;
+    .dual-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px
     }
-    .dual-card:hover .dual-thumb{ transform:translateY(-2px); box-shadow:0 16px 36px rgba(0,0,0,.14); }
 
-    .dual-footer{display:flex;justify-content:flex-end;margin-top:16px}
-    .dual-continue{border:0;border-radius:12px;padding:12px 16px;font-weight:900;background:#111;color:#fff;opacity:.6}
-    .dual-continue.enabled{opacity:1;cursor:pointer}
+    .dual-card {
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, .06)
+    }
 
-    .dual-card.p1 { border-color:#2563eb; background-color:#b1c1f5; }
-    .dual-card.p1 .dual-title { background:#2563eb; }
-    .dual-card.p1 .gender-btn { border-color:#2563eb; background:#e0ecff; }
-    .dual-card.p1 .gender-btn.is-selected { background:#2563eb; color:#fff; }
+    .dual-title {
+      display: inline-block;
+      background: #111;
+      color: #fff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-weight: 800;
+      font-size: 12px
+    }
 
-    .dual-card.p2 { border-color:#7c3aed; background-color:#d1bdf5; }
-    .dual-card.p2 .dual-title { background:#7c3aed; }
-    .dual-card.p2 .gender-btn { border-color:#ede9fe; background:#e3ddff; }
-    .dual-card.p2 .gender-btn.is-selected { background:#7c3aed; color:#fff; }
+    .dual-name {
+      font-size: 22px;
+      font-weight: 900;
+      margin: 10px 0 2px;
+      text-align: center
+    }
 
-    canvas.confetti-canvas{ position:fixed !important; inset:0 !important; width:100vw !important; height:100vh !important;
-      z-index:1; pointer-events:none !important; }
+    .dual-keys {
+      color: #a16207;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 10px
+    }
+
+    .gender-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 12px
+    }
+
+    .gender-btn {
+      flex: 1;
+      border: 2px solid #3b82f6;
+      background: #e0ecff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 900;
+      cursor: pointer
+    }
+
+    .gender-btn.is-selected {
+      background: #3b82f6;
+      color: #fff
+    }
+
+    .dual-thumb {
+      width: 128px;
+      height: 128px;
+      margin: 14px auto 8px;
+      border: 4px solid #fff;
+      border-radius: 18px;
+      background: #fff center/contain no-repeat;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+      transition: transform .15s ease, box-shadow .15s ease, background-image .08s linear;
+      will-change: background-image;
+    }
+
+    .dual-card:hover .dual-thumb {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, .14);
+    }
+
+    .dual-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px
+    }
+
+    .dual-continue {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 900;
+      background: #111;
+      color: #fff;
+      opacity: .6
+    }
+
+    .dual-continue.enabled {
+      opacity: 1;
+      cursor: pointer
+    }
+
+    .dual-card.p1 {
+      border-color: #2563eb;
+      background-color: #b1c1f5;
+    }
+
+    .dual-card.p1 .dual-title {
+      background: #2563eb;
+    }
+
+    .dual-card.p1 .gender-btn {
+      border-color: #2563eb;
+      background: #e0ecff;
+    }
+
+    .dual-card.p1 .gender-btn.is-selected {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .dual-card.p2 {
+      border-color: #7c3aed;
+      background-color: #d1bdf5;
+    }
+
+    .dual-card.p2 .dual-title {
+      background: #7c3aed;
+    }
+
+    .dual-card.p2 .gender-btn {
+      border-color: #ede9fe;
+      background: #e3ddff;
+    }
+
+    .dual-card.p2 .gender-btn.is-selected {
+      background: #7c3aed;
+      color: #fff;
+    }
+
+    canvas.confetti-canvas {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 1;
+      pointer-events: none !important;
+    }
+
+    /* Phóng to rồi thu lại + phát sáng nhẹ */
+.pill.winner-pop {
+  animation: winPop 3s cubic-bezier(.2,.8,.2,1) 0s 1 both;
+  will-change: transform, box-shadow;
+}
+@keyframes winPop {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 rgba(34,197,94,0); }
+  45%  { transform: scale(1.18); box-shadow: 0 12px 30px rgba(8, 231, 90, 0.918); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 rgba(34,197,94,0); }
+}
+
+.company-logo {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  width: 80px;     /* chỉnh kích thước tùy ý */
+  height: auto;
+  z-index: 2000;   /* cao hơn popup */
+  pointer-events: none; /* để không bị click nhầm */
+}
+
   </style>
 </head>
 
 <body>
+  <img src="image/logo.png" alt="Logo công ty" class="company-logo">
   <div class="wrap">
     <div class="row">
       <div class="stats">
@@ -206,33 +689,33 @@
 
   <script>
     /* ========= Maze & Game ========= */
-    const START_PLAYER  = { x:1, y:1 };
-    const START_PLAYER2 = { x:2, y:1 };
-    const START_AI      = { x:1, y:9 };
+    const START_PLAYER = { x: 1, y: 1 };
+    const START_PLAYER2 = { x: 2, y: 1 };
+    const START_AI = { x: 1, y: 9 };
 
     const MAZE = [
-      [1,1,1,1,1,1,1,1,1,1,1,1],
-      [1,0,0,0,1,0,0,0,0,0,0,1],
-      [1,0,1,0,1,0,1,0,1,1,0,1],
-      [1,0,1,0,0,0,1,0,0,1,0,1],
-      [1,0,1,1,1,0,1,1,0,1,0,2],
-      [1,0,0,0,0,0,0,0,0,1,0,1],
-      [1,0,1,1,0,1,1,1,0,1,0,1],
-      [1,0,0,1,0,0,0,1,0,0,0,1],
-      [1,0,1,1,0,1,0,1,1,1,0,1],
-      [1,0,0,0,0,1,0,0,0,1,0,1],
-      [1,1,1,1,0,1,0,1,0,1,0,1],
-      [1,1,1,1,1,1,1,1,1,1,1,1]
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+      [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1],
+      [1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 2],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+      [1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+      [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+      [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+      [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+      [1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     ];
     const COLS = MAZE[0].length, ROWS = MAZE.length;
     const GOAL = findGoal(MAZE) || { x: COLS - 2, y: 1 };
 
     const DIFFICULTY_PRESETS = {
-      easy  :{speedAiMs:170, aiStepsPerTick:1, showPathAlpha:0.35, rival:{name:"Bạn Rùa 'AI'",  trainedLabel:"1 ngày",  img:"image/rua.png"}},
-      normal:{speedAiMs:150, aiStepsPerTick:2, showPathAlpha:0.25, rival:{name:"Bạn Thỏ 'AI'", trainedLabel:"1 tuần",  img:"image/tho.png"}},
-      hard  :{speedAiMs:110, aiStepsPerTick:3, showPathAlpha:0.12, rival:{name:"Bạn Sói 'AI'",  trainedLabel:"1 tháng", img:"image/soi.png"}},
+      easy: { speedAiMs: 170, aiStepsPerTick: 1, showPathAlpha: 0.35, rival: { name: "Bạn Rùa 'AI'", trainedLabel: "1 ngày", img: "image/rua.png" } },
+      normal: { speedAiMs: 150, aiStepsPerTick: 2, showPathAlpha: 0.25, rival: { name: "Bạn Thỏ 'AI'", trainedLabel: "1 tuần", img: "image/tho.png" } },
+      hard: { speedAiMs: 110, aiStepsPerTick: 3, showPathAlpha: 0.12, rival: { name: "Bạn Sói 'AI'", trainedLabel: "1 tháng", img: "image/soi.png" } },
     };
-    const MODE_META={ easy:{label:"Dễ",color:"#22c55e"}, normal:{label:"Bình thường",color:"#3b82f6"}, hard:{label:"Khó",color:"#ef4444"} };
+    const MODE_META = { easy: { label: "Dễ", color: "#22c55e" }, normal: { label: "Bình thường", color: "#3b82f6" }, hard: { label: "Khó", color: "#ef4444" } };
 
     let settings = { ...DIFFICULTY_PRESETS.normal };
 
@@ -249,32 +732,32 @@
     const TILE_MIN = 24, TILE_MAX = 160;
     let player = { ...START_PLAYER }, player2 = { ...START_PLAYER2 }, ai = { ...START_AI };
 
-    let running=false, aiTimer=null, showPath=false, finished=false;
-    let t0Player=0,t0Player2=0,t0AI=0,tFinishPlayer=0,tFinishPlayer2=0,tFinishAI=0;
-    let countdownLock=false, countdownAbort=false, humanStarted=false;
-    let aiPlannedAction=null, aiNextCell=null;
-    let PAD=24, OX=0, OY=0;
+    let running = false, aiTimer = null, showPath = false, finished = false;
+    let t0Player = 0, t0Player2 = 0, t0AI = 0, tFinishPlayer = 0, tFinishPlayer2 = 0, tFinishAI = 0;
+    let countdownLock = false, countdownAbort = false, humanStarted = false;
+    let aiPlannedAction = null, aiNextCell = null;
+    let PAD = 24, OX = 0, OY = 0;
 
     /* ===== Sprites: tách riêng P1/P2 ===== */
     const SPRITES = {
       p1: { male: new Image(), female: new Image() },
       p2: { male: new Image(), female: new Image() },
     };
-    SPRITES.p1.male.src   = "image/student_male_1.png";
+    SPRITES.p1.male.src = "image/student_male_1.png";
     SPRITES.p1.female.src = "image/student_female_1.png";
-    SPRITES.p2.male.src   = "image/student_male_2.png";
+    SPRITES.p2.male.src = "image/student_male_2.png";
     SPRITES.p2.female.src = "image/student_female_2.png";
 
     /* AI image */
     const aiImg = new Image();
-    let aiImgOk=false;
+    let aiImgOk = false;
 
     /* Default genders */
     let playerGender = "male";
     let player2Gender = "male";
 
     /* helpers */
-    const pathFor   = (playerId, gender) => (playerId === "p1" ? SPRITES.p1 : SPRITES.p2)[gender === "female" ? "female" : "male"].src;
+    const pathFor = (playerId, gender) => (playerId === "p1" ? SPRITES.p1 : SPRITES.p2)[gender === "female" ? "female" : "male"].src;
     const spriteFor = (playerId, gender) => (playerId === "p1" ? SPRITES.p1 : SPRITES.p2)[gender === "female" ? "female" : "male"];
 
     [SPRITES.p1.male, SPRITES.p1.female, SPRITES.p2.male, SPRITES.p2.female].forEach(im => { im.onload = () => draw(); });
@@ -283,13 +766,13 @@
     applyDifficulty(diffSel.value || "normal");
 
     /* ===== Utils ===== */
-    function findGoal(g){
-      for(let y=0;y<g.length;y++)
-        for(let x=0;x<g[y].length;x++)
-          if(g[y][x]===2) return {x,y};
+    function findGoal(g) {
+      for (let y = 0; y < g.length; y++)
+        for (let x = 0; x < g[y].length; x++)
+          if (g[y][x] === 2) return { x, y };
       return null;
     }
-    function canMove(x,y){ return !(y<0||y>=ROWS||x<0||x>=COLS) && MAZE[y][x]!==1; }
+    function canMove(x, y) { return !(y < 0 || y >= ROWS || x < 0 || x >= COLS) && MAZE[y][x] !== 1; }
 
     /* ===== Draw ===== */
     function roundRect(ctx, x, y, w, h, r = 8) {
@@ -303,18 +786,18 @@
       ctx.closePath();
     }
 
-    function draw(){
-      const CANVAS_W = canvas.width  / DPR;
+    function draw() {
+      const CANVAS_W = canvas.width / DPR;
       const CANVAS_H = canvas.height / DPR;
 
-      ctx.clearRect(0,0, CANVAS_W, CANVAS_H);
+      ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
       // Maze
-      for (let y=0; y<ROWS; y++){
-        for (let x=0; x<COLS; x++){
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
           const v = MAZE[y][x];
-          ctx.fillStyle = v===1 ? "#16a34a" : (v===2 ? "#ffec8a" : "#ffffff");
-          ctx.fillRect(OX + x*TILE + 1, OY + y*TILE + 1, TILE - 2, TILE - 2);
+          ctx.fillStyle = v === 1 ? "#16a34a" : (v === 2 ? "#ffec8a" : "#ffffff");
+          ctx.fillRect(OX + x * TILE + 1, OY + y * TILE + 1, TILE - 2, TILE - 2);
         }
       }
 
@@ -322,18 +805,18 @@
       const gx = OX + GOAL.x * TILE, gy = OY + GOAL.y * TILE;
       ctx.save();
       ctx.lineWidth = 6; ctx.strokeStyle = "#f59e0b";
-      ctx.strokeRect(gx+3, gy+3, TILE-6, TILE-6);
+      ctx.strokeRect(gx + 3, gy + 3, TILE - 6, TILE - 6);
       ctx.lineWidth = 2; ctx.strokeStyle = "#ffffff";
-      ctx.strokeRect(gx+6, gy+6, TILE-12, TILE-12);
+      ctx.strokeRect(gx + 6, gy + 6, TILE - 12, TILE - 12);
       ctx.restore();
 
-      (function drawGoalBadge(){
+      (function drawGoalBadge() {
         const label = "ĐÍCH ĐẾN";
         const fontPx = Math.max(14, Math.floor(TILE * 0.38));
         ctx.font = `bold ${fontPx}px system-ui, -apple-system, Segoe UI, Roboto`;
         const textW = ctx.measureText(label).width;
-        const padX  = Math.max(10, Math.floor(TILE * 0.18));
-        const padY  = Math.max(6,  Math.floor(TILE * 0.12));
+        const padX = Math.max(10, Math.floor(TILE * 0.18));
+        const padY = Math.max(6, Math.floor(TILE * 0.12));
         const badgeW = Math.ceil(textW + padX * 2);
         const badgeH = Math.ceil(fontPx + padY * 2);
 
@@ -370,177 +853,177 @@
       })();
 
       // Show AI planned step
-      if (showPath && aiNextCell){
+      if (showPath && aiNextCell) {
         ctx.save();
         ctx.lineWidth = 3; ctx.strokeStyle = "#e53935";
-        ctx.strokeRect(OX + aiNextCell.x*TILE + 5, OY + aiNextCell.y*TILE + 5, TILE-10, TILE-10);
+        ctx.strokeRect(OX + aiNextCell.x * TILE + 5, OY + aiNextCell.y * TILE + 5, TILE - 10, TILE - 10);
         ctx.globalAlpha = 0.15; ctx.fillStyle = "#e53953";
-        ctx.fillRect(OX + aiNextCell.x*TILE + 6, OY + aiNextCell.y*TILE + 6, TILE-12, TILE-12);
+        ctx.fillRect(OX + aiNextCell.x * TILE + 6, OY + aiNextCell.y * TILE + 6, TILE - 12, TILE - 12);
         ctx.restore();
       }
 
       // Characters (tách sprite P1/P2)
       const p1Img = spriteFor("p1", playerGender);
       const p2Img = spriteFor("p2", player2Gender);
-      drawSprite(player.x,  player.y,  p1Img.complete ? p1Img : null, "#1976d2", { scale: 0.95, mode: "contain" });
+      drawSprite(player.x, player.y, p1Img.complete ? p1Img : null, "#1976d2", { scale: 0.95, mode: "contain" });
       drawSprite(player2.x, player2.y, p2Img.complete ? p2Img : null, "#7c3aed", { scale: 0.95, mode: "contain" });
-      drawSprite(ai.x,      ai.y,      aiImgOk ? aiImg : null,       "#e53935", { scale: 1.15, mode: "contain" });
+      drawSprite(ai.x, ai.y, aiImgOk ? aiImg : null, "#e53935", { scale: 1.15, mode: "contain" });
 
       requestAnimationFrame(draw);
     }
 
-    function drawSprite(x,y,img,fallback,{scale=1,mode="contain"}={}){
-      const box=TILE*scale;
-      if(img && img.complete && (img.naturalWidth||img.width)){
-        const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height, ar=iw/ih;
-        let w,h; if(mode==="cover"){ if(ar>=1){h=box; w=box*ar;} else {w=box; h=box/ar;} }
-        else { if(ar>=1){w=box; h=box/ar;} else {h=box; w=box*ar;} }
-        const dx = OX + x*TILE + (TILE - w)/2;
-        const dy = OY + y*TILE + (TILE - h)/2;
-        const prev=ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled=true;
-        ctx.drawImage(img,dx,dy,w,h); ctx.imageSmoothingEnabled=prev;
-      }else{
-        ctx.fillStyle=fallback; ctx.beginPath(); const r=Math.min(box,TILE)*.33;
-        ctx.arc(OX + x*TILE + TILE/2, OY + y*TILE + TILE/2, r, 0, Math.PI*2); ctx.fill();
+    function drawSprite(x, y, img, fallback, { scale = 1, mode = "contain" } = {}) {
+      const box = TILE * scale;
+      if (img && img.complete && (img.naturalWidth || img.width)) {
+        const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, ar = iw / ih;
+        let w, h; if (mode === "cover") { if (ar >= 1) { h = box; w = box * ar; } else { w = box; h = box / ar; } }
+        else { if (ar >= 1) { w = box; h = box / ar; } else { h = box; w = box * ar; } }
+        const dx = OX + x * TILE + (TILE - w) / 2;
+        const dy = OY + y * TILE + (TILE - h) / 2;
+        const prev = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(img, dx, dy, w, h); ctx.imageSmoothingEnabled = prev;
+      } else {
+        ctx.fillStyle = fallback; ctx.beginPath(); const r = Math.min(box, TILE) * .33;
+        ctx.arc(OX + x * TILE + TILE / 2, OY + y * TILE + TILE / 2, r, 0, Math.PI * 2); ctx.fill();
       }
     }
 
     /* ===== RL ===== */
-    const ACTIONS=[{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}];
-    const Q=new Map(); const sk=p=>`${p.x},${p.y}`; function getQArr(s){ if(!Q.has(s)) Q.set(s,[0,0,0,0]); return Q.get(s); }
-    const ALPHA=.5, GAMMA=.97; let EPSILON=.15; const EPS_MIN=.05; let TAU=1.10; const TAU_MIN=.30;
-    const BASE_STEP_REWARD=-.02, SHAPE_SCALE=.45;
+    const ACTIONS = [{ dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }];
+    const Q = new Map(); const sk = p => `${p.x},${p.y}`; function getQArr(s) { if (!Q.has(s)) Q.set(s, [0, 0, 0, 0]); return Q.get(s); }
+    const ALPHA = .5, GAMMA = .97; let EPSILON = .15; const EPS_MIN = .05; let TAU = 1.10; const TAU_MIN = .30;
+    const BASE_STEP_REWARD = -.02, SHAPE_SCALE = .45;
 
-    function bfsDistanceToGoal(){
-      const d=Array.from({length:ROWS},_=>Array(COLS).fill(Infinity));
-      const q=[GOAL]; d[GOAL.y][GOAL.x]=0;
-      while(q.length){
-        const {x,y}=q.shift();
-        for(const {dx,dy} of ACTIONS){
-          const nx=x+dx, ny=y+dy;
-          if(canMove(nx,ny)&&d[ny][nx]===Infinity){ d[ny][nx]=d[y][x]+1; q.push({x:nx,y:ny}); }
+    function bfsDistanceToGoal() {
+      const d = Array.from({ length: ROWS }, _ => Array(COLS).fill(Infinity));
+      const q = [GOAL]; d[GOAL.y][GOAL.x] = 0;
+      while (q.length) {
+        const { x, y } = q.shift();
+        for (const { dx, dy } of ACTIONS) {
+          const nx = x + dx, ny = y + dy;
+          if (canMove(nx, ny) && d[ny][nx] === Infinity) { d[ny][nx] = d[y][x] + 1; q.push({ x: nx, y: ny }); }
         }
       } return d;
     }
-    const DIST=bfsDistanceToGoal();
-    const phi=p=>{const d=DIST[p.y]?.[p.x]; return (d!==undefined&&isFinite(d))?-d:0;}
-    ;(function warmStart(){
-      const BOOST=.15, PENALTY=-.03;
-      for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
-        if(!canMove(x,y)) continue;
-        const s=sk({x,y}), q=getQArr(s), dHere=DIST[y][x];
-        for(let a=0;a<4;a++){
-          const nx=x+ACTIONS[a].dx, ny=y+ACTIONS[a].dy;
-          if(!canMove(nx,ny)){ q[a]+=PENALTY; continue; }
-          const dNext=DIST[ny][nx];
-          if(isFinite(dHere)&&isFinite(dNext)){
-            if(dNext<dHere) q[a]+=BOOST; else if(dNext>dHere) q[a]+=PENALTY;
+    const DIST = bfsDistanceToGoal();
+    const phi = p => { const d = DIST[p.y]?.[p.x]; return (d !== undefined && isFinite(d)) ? -d : 0; }
+      ; (function warmStart() {
+        const BOOST = .15, PENALTY = -.03;
+        for (let y = 0; y < ROWS; y++)for (let x = 0; x < COLS; x++) {
+          if (!canMove(x, y)) continue;
+          const s = sk({ x, y }), q = getQArr(s), dHere = DIST[y][x];
+          for (let a = 0; a < 4; a++) {
+            const nx = x + ACTIONS[a].dx, ny = y + ACTIONS[a].dy;
+            if (!canMove(nx, ny)) { q[a] += PENALTY; continue; }
+            const dNext = DIST[ny][nx];
+            if (isFinite(dHere) && isFinite(dNext)) {
+              if (dNext < dHere) q[a] += BOOST; else if (dNext > dHere) q[a] += PENALTY;
+            }
           }
         }
-      }
-    })();
+      })();
 
-    function validActions(p){ const A=[]; for(let a=0;a<4;a++){ const nx=p.x+ACTIONS[a].dx, ny=p.y+ACTIONS[a].dy; if(canMove(nx,ny)) A.push(a);} return A.length?A:[0,1,2,3]; }
-    function softmaxSample(q,acts,tau){
-      let m=-Infinity; acts.forEach(a=>{if(q[a]>m)m=q[a];});
-      const exps=acts.map(a=>Math.exp((q[a]-m)/Math.max(1e-6,tau)));
-      const sum=exps.reduce((s,v)=>s+v,0);
-      let r=Math.random()*sum; for(let i=0;i<acts.length;i++){ r-=exps[i]; if(r<=0) return acts[i]; }
-      return acts[acts.length-1];
+    function validActions(p) { const A = []; for (let a = 0; a < 4; a++) { const nx = p.x + ACTIONS[a].dx, ny = p.y + ACTIONS[a].dy; if (canMove(nx, ny)) A.push(a); } return A.length ? A : [0, 1, 2, 3]; }
+    function softmaxSample(q, acts, tau) {
+      let m = -Infinity; acts.forEach(a => { if (q[a] > m) m = q[a]; });
+      const exps = acts.map(a => Math.exp((q[a] - m) / Math.max(1e-6, tau)));
+      const sum = exps.reduce((s, v) => s + v, 0);
+      let r = Math.random() * sum; for (let i = 0; i < acts.length; i++) { r -= exps[i]; if (r <= 0) return acts[i]; }
+      return acts[acts.length - 1];
     }
-    function chooseAction(p){ const acts=validActions(p); if(Math.random()<EPSILON) return acts[Math.floor(Math.random()*acts.length)]; const q=getQArr(sk(p)); return softmaxSample(q,acts,TAU); }
+    function chooseAction(p) { const acts = validActions(p); if (Math.random() < EPSILON) return acts[Math.floor(Math.random() * acts.length)]; const q = getQArr(sk(p)); return softmaxSample(q, acts, TAU); }
 
-    function stepEnv(pos,a,visit){
-      const nx=pos.x+ACTIONS[a].dx, ny=pos.y+ACTIONS[a].dy; const next={x:nx,y:ny}; const done=(nx===GOAL.x&&ny===GOAL.y);
-      let r=BASE_STEP_REWARD + SHAPE_SCALE*(GAMMA*phi(next)-phi(pos)); if(done) r+=1;
-      const key=sk(next), v=(visit.get(key)||0)+1; r-=Math.min(.03*(v-1),.20); visit.set(key,v);
-      return {next,reward:r,done};
+    function stepEnv(pos, a, visit) {
+      const nx = pos.x + ACTIONS[a].dx, ny = pos.y + ACTIONS[a].dy; const next = { x: nx, y: ny }; const done = (nx === GOAL.x && ny === GOAL.y);
+      let r = BASE_STEP_REWARD + SHAPE_SCALE * (GAMMA * phi(next) - phi(pos)); if (done) r += 1;
+      const key = sk(next), v = (visit.get(key) || 0) + 1; r -= Math.min(.03 * (v - 1), .20); visit.set(key, v);
+      return { next, reward: r, done };
     }
-    function updateQ(s,a,r,s2){ const q=getQArr(s); const maxQ2=Math.max(...getQArr(s2)); q[a]=q[a]+ALPHA*(r+GAMMA*maxQ2-q[a]); }
-    function planNextStep(){ const a=chooseAction(ai); return {a, next:{x:ai.x+ACTIONS[a].dx, y:ai.y+ACTIONS[a].dy}}; }
+    function updateQ(s, a, r, s2) { const q = getQArr(s); const maxQ2 = Math.max(...getQArr(s2)); q[a] = q[a] + ALPHA * (r + GAMMA * maxQ2 - q[a]); }
+    function planNextStep() { const a = chooseAction(ai); return { a, next: { x: ai.x + ACTIONS[a].dx, y: ai.y + ACTIONS[a].dy } }; }
 
     /* ===== Flow ===== */
-    function resetGame(){
-      player={...START_PLAYER}; player2={...START_PLAYER2}; ai={...START_AI};
-      running=false; finished=false;
-      if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
-      humanStarted=false;
-      t0Player=0; t0Player2=0; t0AI=0; tFinishPlayer=0; tFinishPlayer2=0; tFinishAI=0;
-      EPSILON=.15; TAU=1.10; aiPlannedAction=null; aiNextCell=null;
-      statusEl && (statusEl.textContent="Sẵn sàng!");
+    function resetGame() {
+      player = { ...START_PLAYER }; player2 = { ...START_PLAYER2 }; ai = { ...START_AI };
+      running = false; finished = false;
+      if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
+      humanStarted = false;
+      t0Player = 0; t0Player2 = 0; t0AI = 0; tFinishPlayer = 0; tFinishPlayer2 = 0; tFinishAI = 0;
+      EPSILON = .15; TAU = 1.10; aiPlannedAction = null; aiNextCell = null;
+      statusEl && (statusEl.textContent = "Sẵn sàng!");
       draw();
     }
-    function startRace(){
-      running=true;
-      statusEl && (statusEl.textContent=`BẮT ĐẦU Người 1: ←↑→↓ • Người 2: W A S D • Đối thủ: ${settings.rival?.name||"AI"}`);
+    function startRace() {
+      running = true;
+      statusEl && (statusEl.textContent = `BẮT ĐẦU Người chơi 1: ←↑→↓ • Người chơi 2: W A S D • Đối thủ: ${settings.rival?.name || "AI"}`);
     }
 
-    function startAiLoop(){
-      if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
-      if(!t0AI) t0AI=performance.now();
-      const visit=new Map(); visit.set(sk(ai),1);
+    function startAiLoop() {
+      if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
+      if (!t0AI) t0AI = performance.now();
+      const visit = new Map(); visit.set(sk(ai), 1);
 
-      aiPlannedAction=null;
-      if(showPath&&running&&!finished){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; } else { aiPlannedAction=null; aiNextCell=null; }
+      aiPlannedAction = null;
+      if (showPath && running && !finished) { const plan = planNextStep(); aiPlannedAction = plan.a; aiNextCell = plan.next; } else { aiPlannedAction = null; aiNextCell = null; }
 
-      aiTimer=setInterval(()=>{
-        if(countdownAbort){ clearInterval(aiTimer); aiTimer=null; return; }
-        if(finished||!running){clearInterval(aiTimer); aiTimer=null; return;}
-        if(showPath&&!aiNextCell){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; draw(); }
+      aiTimer = setInterval(() => {
+        if (countdownAbort) { clearInterval(aiTimer); aiTimer = null; return; }
+        if (finished || !running) { clearInterval(aiTimer); aiTimer = null; return; }
+        if (showPath && !aiNextCell) { const plan = planNextStep(); aiPlannedAction = plan.a; aiNextCell = plan.next; draw(); }
 
-        for(let k=0;k<settings.aiStepsPerTick;k++){
-          if(finished||!running) break;
-          const a = aiPlannedAction!==null ? aiPlannedAction : chooseAction(ai);
-          aiPlannedAction=null;
-          const s=sk(ai); const {next,reward,done}=stepEnv(ai,a,visit); const s2=sk(next); updateQ(s,a,reward,s2);
-          ai=next; EPSILON=Math.max(EPS_MIN,EPSILON*.998); TAU=Math.max(TAU_MIN,TAU*.997);
+        for (let k = 0; k < settings.aiStepsPerTick; k++) {
+          if (finished || !running) break;
+          const a = aiPlannedAction !== null ? aiPlannedAction : chooseAction(ai);
+          aiPlannedAction = null;
+          const s = sk(ai); const { next, reward, done } = stepEnv(ai, a, visit); const s2 = sk(next); updateQ(s, a, reward, s2);
+          ai = next; EPSILON = Math.max(EPS_MIN, EPSILON * .998); TAU = Math.max(TAU_MIN, TAU * .997);
 
-          if(done){
-            finished=true; running=false; clearInterval(aiTimer); aiTimer=null;
-            if(!tFinishAI) tFinishAI=performance.now();
-            const tPlayer =(t0Player && tFinishPlayer )?((tFinishPlayer -t0Player )/1000).toFixed(2):"—";
-            const tPlayer2=(t0Player2&& tFinishPlayer2)?((tFinishPlayer2-t0Player2)/1000).toFixed(2):"—";
-            const tAI     =(t0AI     && tFinishAI    )?((tFinishAI     -t0AI     )/1000).toFixed(2):"—";
-            showResultPopup(false,true,false,tPlayer,tAI,tPlayer2);
+          if (done) {
+            finished = true; running = false; clearInterval(aiTimer); aiTimer = null;
+            if (!tFinishAI) tFinishAI = performance.now();
+            const tPlayer = (t0Player && tFinishPlayer) ? ((tFinishPlayer - t0Player) / 1000).toFixed(2) : "—";
+            const tPlayer2 = (t0Player2 && tFinishPlayer2) ? ((tFinishPlayer2 - t0Player2) / 1000).toFixed(2) : "—";
+            const tAI = (t0AI && tFinishAI) ? ((tFinishAI - t0AI) / 1000).toFixed(2) : "—";
+            showResultPopup(false, true, false, tPlayer, tAI, tPlayer2);
             break;
           }
         }
-        aiNextCell=null;
+        aiNextCell = null;
       }, settings.speedAiMs);
     }
 
-    function checkFinishByPlayer(){
-      if(player.x===GOAL.x && player.y===GOAL.y){
-        finished=true; running=false; if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
-        if(!tFinishPlayer) tFinishPlayer=performance.now();
-        const tPlayer =(t0Player && tFinishPlayer )?((tFinishPlayer -t0Player )/1000).toFixed(2):"—";
-        const tPlayer2=(t0Player2&& tFinishPlayer2)?((tFinishPlayer2-t0Player2)/1000).toFixed(2):"—";
-        const tAI     =(t0AI     && tFinishAI    )?((tFinishAI     -t0AI     )/1000).toFixed(2):"—";
-        showResultPopup(true,false,false,tPlayer,tAI,tPlayer2);
+    function checkFinishByPlayer() {
+      if (player.x === GOAL.x && player.y === GOAL.y) {
+        finished = true; running = false; if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
+        if (!tFinishPlayer) tFinishPlayer = performance.now();
+        const tPlayer = (t0Player && tFinishPlayer) ? ((tFinishPlayer - t0Player) / 1000).toFixed(2) : "—";
+        const tPlayer2 = (t0Player2 && tFinishPlayer2) ? ((tFinishPlayer2 - t0Player2) / 1000).toFixed(2) : "—";
+        const tAI = (t0AI && tFinishAI) ? ((tFinishAI - t0AI) / 1000).toFixed(2) : "—";
+        showResultPopup(true, false, false, tPlayer, tAI, tPlayer2);
         return true;
       } return false;
     }
-    function checkFinishByPlayer2(){
-      if(player2.x===GOAL.x && player2.y===GOAL.y){
-        finished=true; running=false; if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
-        if(!tFinishPlayer2) tFinishPlayer2=performance.now();
-        const tPlayer =(t0Player && tFinishPlayer )?((tFinishPlayer -t0Player )/1000).toFixed(2):"—";
-        const tPlayer2=(t0Player2&& tFinishPlayer2)?((tFinishPlayer2-t0Player2)/1000).toFixed(2):"—";
-        const tAI     =(t0AI     && tFinishAI    )?((tFinishAI     -t0AI     )/1000).toFixed(2):"—";
-        showResultPopup(false,false,true,tPlayer,tAI,tPlayer2);
+    function checkFinishByPlayer2() {
+      if (player2.x === GOAL.x && player2.y === GOAL.y) {
+        finished = true; running = false; if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
+        if (!tFinishPlayer2) tFinishPlayer2 = performance.now();
+        const tPlayer = (t0Player && tFinishPlayer) ? ((tFinishPlayer - t0Player) / 1000).toFixed(2) : "—";
+        const tPlayer2 = (t0Player2 && tFinishPlayer2) ? ((tFinishPlayer2 - t0Player2) / 1000).toFixed(2) : "—";
+        const tAI = (t0AI && tFinishAI) ? ((tFinishAI - t0AI) / 1000).toFixed(2) : "—";
+        showResultPopup(false, false, true, tPlayer, tAI, tPlayer2);
         return true;
       } return false;
     }
 
     /* ===== Overlay flow ===== */
-    const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    async function showCountdownThenStart(){
-      countdownAbort=false;
-      countdownLock=true; resetGame();
-      const name=settings.rival?.name||"AI", trained=settings.rival?.trainedLabel||"một thời gian", imgSrc=settings.rival?.img||"image/ai.png";
-      overlay.className="overlay show";
-      overlay.innerHTML=`
+    async function showCountdownThenStart() {
+      countdownAbort = false;
+      countdownLock = true; resetGame();
+      const name = settings.rival?.name || "AI", trained = settings.rival?.trainedLabel || "một thời gian", imgSrc = settings.rival?.img || "image/ai.png";
+      overlay.className = "overlay show";
+      overlay.innerHTML = `
         <div class="intro-card">
           <img class="avatar" src="${imgSrc}" alt="${name}" onerror="this.style.display='none'">
           <div class="lines">
@@ -548,16 +1031,16 @@
             <div class="line2">đã được huấn luyện trong ${trained}</div>
           </div>
         </div>`;
-      await sleep(400); if(countdownAbort) return;
-      await sleep(2000); if(countdownAbort) return;
+      await sleep(400); if (countdownAbort) return;
+      await sleep(2000); if (countdownAbort) return;
 
-      overlay.innerHTML=`<div class="countdown"><div class="title">Sẵn sàng…</div><div class="number">3</div></div>`;
-      const n=overlay.querySelector('.number'); const STEP_MS=1100;
-      n.textContent="3"; await sleep(STEP_MS); if(countdownAbort) return;
-      n.textContent="2"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(STEP_MS); if(countdownAbort) return;
-      n.textContent="1"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(STEP_MS); if(countdownAbort) return;
-      n.textContent="BẮT ĐẦU"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(650); if(countdownAbort) return;
-      overlay.className="overlay"; countdownLock=false; startRace();
+      overlay.innerHTML = `<div class="countdown"><div class="title">Sẵn sàng…</div><div class="number">3</div></div>`;
+      const n = overlay.querySelector('.number'); const STEP_MS = 1100;
+      n.textContent = "3"; await sleep(STEP_MS); if (countdownAbort) return;
+      n.textContent = "2"; n.style.animation = "none"; n.offsetHeight; n.style.animation = "pop .4s ease"; await sleep(STEP_MS); if (countdownAbort) return;
+      n.textContent = "1"; n.style.animation = "none"; n.offsetHeight; n.style.animation = "pop .4s ease"; await sleep(STEP_MS); if (countdownAbort) return;
+      n.textContent = "BẮT ĐẦU"; n.style.animation = "none"; n.offsetHeight; n.style.animation = "pop .4s ease"; await sleep(650); if (countdownAbort) return;
+      overlay.className = "overlay"; countdownLock = false; startRace();
     }
 
     /* ===== Result popup ===== */
@@ -565,15 +1048,16 @@
       const rivalName = settings?.rival?.name || "bạn 'AI'";
       const outcome = (p1Win || p2Win) ? "win" : (aiWin ? "lose" : "draw");
 
-      let ribbonText="", title="", emoji="";
+      let ribbonText = "", title = "", emoji = "";
       if (outcome === "win") {
-        if (p1Win && p2Win) { ribbonText="Hai bạn cùng thắng!"; title="Đồng lòng phá đảo!"; emoji="👯‍♂️"; }
-        else if (p1Win)     { ribbonText="Người 1 thắng!";     title="Quá đỉnh!";         emoji="🏆"; }
-        else                { ribbonText="Người 2 thắng!";     title="Tuyệt vời!";        emoji="🏆"; }
-      } else if (outcome === "lose") { ribbonText=`${rivalName} thắng`; title="Không sao, thử lại nhé!"; emoji="🤖"; }
-      else { ribbonText="Hoà"; title="Cân tài cân sức!"; emoji="⚖️"; }
+        if (p1Win && p2Win) { ribbonText = "Hai bạn cùng chiến thắng!"; title = "Đồng lòng phá đảo!"; emoji = "👯‍♂️"; }
+        else if (p1Win) { ribbonText = "Người chơi 1 chiến thắng!"; title = "Quá đỉnh!"; emoji = "🏆"; }
+        else { ribbonText = "Người chơi 2 chiến thắng!"; title = "Tuyệt vời!"; emoji = "🏆"; }
+      } else if (outcome === "lose") { ribbonText = `${rivalName} thắng`; title = "Không sao, thử lại nhé!"; emoji = "🤖"; }
+      else { ribbonText = "Hoà"; title = "Cân tài cân sức!"; emoji = "⚖️"; }
 
       const timeDisplay = (t) => (t && t !== "—") ? `${t}s` : "Chưa hoàn thành";
+
 
       // avatar theo lựa chọn & AI (đã tách riêng P1/P2)
       const p1ImgSrc = pathFor("p1", playerGender);
@@ -589,17 +1073,17 @@
         <div class="times">
           <div class="pill ${p1Win ? 'score-winner' : ''}">
             <div class="who"><img class="avatar" src="${p1ImgSrc}" alt="P1"><span>Người chơi 1</span></div>
-            <div class="t ${tPlayer==='—' ? 't-pending':''}">${timeDisplay(tPlayer)}</div>
+            <div class="t ${tPlayer === '—' ? 't-pending' : ''}">${timeDisplay(tPlayer)}</div>
           </div>
 
           <div class="pill ${aiWin ? 'score-winner' : ''}">
             <div class="who"><img class="avatar" src="${aiImgSrc}" alt="AI"><span>${settings?.rival?.name || "AI"}</span></div>
-            <div class="t ${tAI==='—' ? 't-pending':''}">${timeDisplay(tAI)}</div>
+            <div class="t ${tAI === '—' ? 't-pending' : ''}">${timeDisplay(tAI)}</div>
           </div>
 
           <div class="pill ${p2Win ? 'score-winner' : ''}">
             <div class="who"><img class="avatar" src="${p2ImgSrc}" alt="P2"><span>Người chơi 2</span></div>
-            <div class="t ${tPlayer2==='—' ? 't-pending':''}">${timeDisplay(tPlayer2)}</div>
+            <div class="t ${tPlayer2 === '—' ? 't-pending' : ''}">${timeDisplay(tPlayer2)}</div>
           </div>
         </div>
 
@@ -608,6 +1092,17 @@
           <button class="primary" id="btnReplay">Chơi lại</button>
         </div>
       </div>`;
+
+      // chọn "pill" thắng và chạy animation pop
+const pills = overlay.querySelectorAll(".times .pill");
+const winnerIdx = p1Win ? 0 : (aiWin ? 1 : 2);
+const winEl = pills[winnerIdx];
+
+// bảo đảm animation chạy mỗi lần mở popup
+winEl.classList.remove("winner-pop");
+void winEl.offsetWidth;        // force reflow
+winEl.classList.add("winner-pop");
+
 
       document.getElementById('btnClose').onclick = () => { overlay.className = "overlay"; };
       document.getElementById('btnReplay').onclick = () => { overlay.className = "overlay"; showCountdownThenStart(); };
@@ -620,19 +1115,19 @@
         const duration = 2000, end = Date.now() + duration;
         const itv = setInterval(() => {
           if (Date.now() > end) return clearInterval(itv);
-          confetti({ particleCount: 30, spread: 60, origin: { x: Math.random(), y: Math.random()*0.5 } });
+          confetti({ particleCount: 30, spread: 60, origin: { x: Math.random(), y: Math.random() * 0.5 } });
         }, 250);
       }
     }
 
     /* ===== Responsive canvas ===== */
-    function resize(){
+    function resize() {
       const VW = window.innerWidth, VH = window.innerHeight, MARGIN = 32;
       const maxW = VW - MARGIN, maxH = VH - MARGIN;
 
-      function fit(maxW, maxH){
+      function fit(maxW, maxH) {
         let tile = TILE_MAX; let pad, w, h;
-        while (tile >= TILE_MIN){
+        while (tile >= TILE_MIN) {
           pad = Math.max(24, Math.floor(tile * 1.1));
           w = COLS * tile + pad * 2; h = ROWS * tile + pad * 2;
           if (w <= maxW && h <= maxH) break;
@@ -645,9 +1140,9 @@
 
       const cssW = w, cssH = h;
       DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
-      canvas.style.width  = cssW + "px";
+      canvas.style.width = cssW + "px";
       canvas.style.height = cssH + "px";
-      canvas.width  = Math.floor(cssW * DPR);
+      canvas.width = Math.floor(cssW * DPR);
       canvas.height = Math.floor(cssH * DPR);
 
       OX = PAD; OY = PAD;
@@ -657,24 +1152,24 @@
     }
 
     /* ===== Character select (2 bước: AI -> P1&P2) ===== */
-    function setDifficulty(mode){
-      const p=DIFFICULTY_PRESETS[mode]||DIFFICULTY_PRESETS.normal;
-      settings={...p};
-      diffSel && (diffSel.value=mode);
-      localStorage.setItem('maze:difficulty',mode);
+    function setDifficulty(mode) {
+      const p = DIFFICULTY_PRESETS[mode] || DIFFICULTY_PRESETS.normal;
+      settings = { ...p };
+      diffSel && (diffSel.value = mode);
+      localStorage.setItem('maze:difficulty', mode);
       applyDifficulty(mode);
     }
 
-    function renderCharSelect(step="ai"){
-      if(step==="ai"){
-        const modes=['easy','normal','hard'];
-        charSelect.innerHTML=`<div class="char-select-card">
+    function renderCharSelect(step = "ai") {
+      if (step === "ai") {
+        const modes = ['easy', 'normal', 'hard'];
+        charSelect.innerHTML = `<div class="char-select-card">
           <div class="char-select-title">Bước 1/2 – Chọn bạn 'AI' để thi đấu</div>
           <div class="char-select-sub">Rùa (dễ), Thỏ (bình thường), Sói (khó)</div>
           <div class="char-grid">
-            ${modes.map(m=>{
-              const r=DIFFICULTY_PRESETS[m].rival, meta=MODE_META[m];
-              return `<div class="char-item" style="--accent:${meta.color};">
+            ${modes.map(m => {
+          const r = DIFFICULTY_PRESETS[m].rival, meta = MODE_META[m];
+          return `<div class="char-item" style="--accent:${meta.color};">
                 <div class="char-badge">${meta.label}</div>
                 <img class="char-thumb" src="${r.img}" alt="${r.name}" onerror="this.style.display='none'"/>
                 <div class="char-lines">
@@ -688,154 +1183,155 @@
       }
 
       // Bước 2
-      charSelect.innerHTML=`<div class="char-select-card">
+      charSelect.innerHTML = `<div class="char-select-card">
         <div class="char-select-title">Bước 2/2 – Chọn người chơi 1 & 2</div>
         <div class="char-select-sub">Giới tính nhân vật học sinh • Chọn xong cả hai rồi bấm <b>Bắt đầu</b></div>
 
         <div class="dual-columns">
           <div class="dual-card p1" data-player="p1">
             <span class="dual-title">Người 1</span>
-            <div class="dual-name">${playerGender==="female"?"Nữ":"Nam"}</div>
+            <div class="dual-name">${playerGender === "female" ? "Nữ" : "Nam"}</div>
             <div class="dual-keys">Phím: ← ↑ → ↓</div>
             <div class="dual-thumb" data-preview="p1" style="background-image:url('${pathFor("p1", playerGender)}')"></div>
             <div class="gender-row">
-              <button class="gender-btn ${playerGender!=="female"?"is-selected":""}" data-player="p1" data-g="male">Nam</button>
-              <button class="gender-btn ${playerGender==="female"?"is-selected":""}" data-player="p1" data-g="female">Nữ</button>
+              <button class="gender-btn ${playerGender !== "female" ? "is-selected" : ""}" data-player="p1" data-g="male">Nam</button>
+              <button class="gender-btn ${playerGender === "female" ? "is-selected" : ""}" data-player="p1" data-g="female">Nữ</button>
             </div>
           </div>
 
           <div class="dual-card p2" data-player="p2">
             <span class="dual-title">Người 2</span>
-            <div class="dual-name">${player2Gender==="female"?"Nữ":"Nam"}</div>
+            <div class="dual-name">${player2Gender === "female" ? "Nữ" : "Nam"}</div>
             <div class="dual-keys">Phím: W A S D</div>
             <div class="dual-thumb" data-preview="p2" style="background-image:url('${pathFor("p2", player2Gender)}')"></div>
             <div class="gender-row">
-              <button class="gender-btn ${player2Gender!=="female"?"is-selected":""}" data-player="p2" data-g="male">Nam</button>
-              <button class="gender-btn ${player2Gender==="female"?"is-selected":""}" data-player="p2" data-g="female">Nữ</button>
+              <button class="gender-btn ${player2Gender !== "female" ? "is-selected" : ""}" data-player="p2" data-g="male">Nam</button>
+              <button class="gender-btn ${player2Gender === "female" ? "is-selected" : ""}" data-player="p2" data-g="female">Nữ</button>
             </div>
           </div>
         </div>
 
         <div class="dual-footer">
-          <button class="dual-continue ${playerGender && player2Gender ? "enabled":""}" data-action="start">Bắt đầu</button>
+          <button class="dual-continue ${playerGender && player2Gender ? "enabled" : ""}" data-action="start">Bắt đầu</button>
         </div>
       </div>`;
     }
 
-    function openCharSelect(){ renderCharSelect("ai"); charSelect.className='char-select-overlay show'; }
-    charSelect.addEventListener('click',e=>{ if(e.target===charSelect) charSelect.className='char-select-overlay'; });
+    function openCharSelect() { renderCharSelect("ai"); charSelect.className = 'char-select-overlay show'; }
+    charSelect.addEventListener('click', e => { if (e.target === charSelect) charSelect.className = 'char-select-overlay'; });
 
-    charSelect.addEventListener('click',e=>{
-      const btn=e.target.closest('button'); if(!btn) return;
+    charSelect.addEventListener('click', e => {
+      const btn = e.target.closest('button'); if (!btn) return;
 
       // Bước 1: chọn AI
       const mode = btn.getAttribute('data-mode');
       const next = btn.getAttribute('data-next');
-      if(mode){ setDifficulty(mode); renderCharSelect(next || "both"); return; }
+      if (mode) { setDifficulty(mode); renderCharSelect(next || "both"); return; }
 
       // Bước 2: chọn giới tính cho P1/P2
       const playerId = btn.getAttribute('data-player');
-      const gender   = btn.getAttribute('data-g');
-      if(playerId && gender){
-        if(playerId==="p1"){ playerGender = gender; }
-        if(playerId==="p2"){ player2Gender = gender; }
+      const gender = btn.getAttribute('data-g');
+      if (playerId && gender) {
+        if (playerId === "p1") { playerGender = gender; }
+        if (playerId === "p2") { player2Gender = gender; }
 
         const card = charSelect.querySelector(`.dual-card[data-player="${playerId}"]`);
-        card.querySelectorAll('.gender-btn').forEach(b=>b.classList.remove('is-selected'));
+        card.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('is-selected'));
         btn.classList.add('is-selected');
-        card.querySelector('.dual-name').textContent = (gender==="female"?"Nữ":"Nam");
+        card.querySelector('.dual-name').textContent = (gender === "female" ? "Nữ" : "Nam");
         card.querySelector(`.dual-thumb[data-preview="${playerId}"]`).style.backgroundImage = `url('${pathFor(playerId, gender)}')`;
 
         const startBtn = charSelect.querySelector('.dual-continue');
-        if(playerGender && player2Gender){ startBtn.classList.add('enabled'); }
+        if (playerGender && player2Gender) { startBtn.classList.add('enabled'); }
         return;
       }
 
       // Bắt đầu
-      if(btn.getAttribute('data-action')==="start"){
-        if(!(playerGender && player2Gender)) return;
-        charSelect.className='char-select-overlay';
-        if(!countdownLock) showCountdownThenStart();
+      if (btn.getAttribute('data-action') === "start") {
+        if (!(playerGender && player2Gender)) return;
+        charSelect.className = 'char-select-overlay';
+        if (!countdownLock) showCountdownThenStart();
       }
     });
 
-    function applyDifficulty(mode){
-      const p=DIFFICULTY_PRESETS[mode]||DIFFICULTY_PRESETS.normal;
-      settings={...p};
-      rivalNameEl && (rivalNameEl.textContent=settings.rival?.name||"AI");
-      aiImgOk=false; aiImg.src=settings.rival?.img || "image/angry.png";
+    function applyDifficulty(mode) {
+      const p = DIFFICULTY_PRESETS[mode] || DIFFICULTY_PRESETS.normal;
+      settings = { ...p };
+      rivalNameEl && (rivalNameEl.textContent = settings.rival?.name || "AI");
+      aiImgOk = false; aiImg.src = settings.rival?.img || "image/angry.png";
     }
 
     /* ===== Nút UI ===== */
-    btnStart && btnStart.addEventListener("click", ()=>{ if(!countdownLock) openCharSelect(); });
-    btnShow && btnShow.addEventListener("click", ()=>{
-      showPath=!showPath;
-      if(showPath&&running&&!finished){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; }
-      else { aiNextCell=null; aiPlannedAction=null; }
+    btnStart && btnStart.addEventListener("click", () => { if (!countdownLock) openCharSelect(); });
+    btnShow && btnShow.addEventListener("click", () => {
+      showPath = !showPath;
+      if (showPath && running && !finished) { const plan = planNextStep(); aiPlannedAction = plan.a; aiNextCell = plan.next; }
+      else { aiNextCell = null; aiPlannedAction = null; }
     });
-    diffSel && diffSel.addEventListener('change', e=>{ const mode=e.target.value; setDifficulty(mode); if(aiTimer) startAiLoop(); });
+    diffSel && diffSel.addEventListener('change', e => { const mode = e.target.value; setDifficulty(mode); if (aiTimer) startAiLoop(); });
 
     /* ===== Phím điều khiển & Reset ===== */
-    function gotoStep1(){
-      countdownAbort=true; countdownLock=false;
-      if(aiTimer){ clearInterval(aiTimer); aiTimer=null; }
-      overlay.className="overlay";
+    function gotoStep1() {
+      countdownAbort = true; countdownLock = false;
+      if (aiTimer) { clearInterval(aiTimer); aiTimer = null; }
+      overlay.className = "overlay";
       resetGame();
       renderCharSelect("ai");
-      charSelect.className='char-select-overlay show';
+      charSelect.className = 'char-select-overlay show';
     }
-    document.addEventListener("keydown", (e)=>{
-      if(e.key==="r"||e.key==="R"){ e.preventDefault?.(); gotoStep1(); return; }
-      if(!running||finished||countdownLock) return;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "r" || e.key === "R") { e.preventDefault?.(); gotoStep1(); return; }
+      if (!running || finished || countdownLock) return;
 
       // P1: Arrow keys
-      if(e.key==="ArrowUp"){e.preventDefault?.(); movePlayer(0,-1); return; }
-      if(e.key==="ArrowDown"){e.preventDefault?.(); movePlayer(0, 1); return; }
-      if(e.key==="ArrowLeft"){e.preventDefault?.(); movePlayer(-1,0); return; }
-      if(e.key==="ArrowRight"){e.preventDefault?.(); movePlayer(1, 0); return; }
+      if (e.key === "ArrowUp") { e.preventDefault?.(); movePlayer(0, -1); return; }
+      if (e.key === "ArrowDown") { e.preventDefault?.(); movePlayer(0, 1); return; }
+      if (e.key === "ArrowLeft") { e.preventDefault?.(); movePlayer(-1, 0); return; }
+      if (e.key === "ArrowRight") { e.preventDefault?.(); movePlayer(1, 0); return; }
 
       // P2: WASD
-      if(e.key==="w"||e.key==="W"){ e.preventDefault?.(); movePlayer2(0,-1); return; }
-      if(e.key==="s"||e.key==="S"){ e.preventDefault?.(); movePlayer2(0, 1); return; }
-      if(e.key==="a"||e.key==="A"){ e.preventDefault?.(); movePlayer2(-1,0); return; }
-      if(e.key==="d"||e.key==="D"){ e.preventDefault?.(); movePlayer2( 1, 0); return; }
+      if (e.key === "w" || e.key === "W") { e.preventDefault?.(); movePlayer2(0, -1); return; }
+      if (e.key === "s" || e.key === "S") { e.preventDefault?.(); movePlayer2(0, 1); return; }
+      if (e.key === "a" || e.key === "A") { e.preventDefault?.(); movePlayer2(-1, 0); return; }
+      if (e.key === "d" || e.key === "D") { e.preventDefault?.(); movePlayer2(1, 0); return; }
     });
 
     window.addEventListener("resize", resize);
 
     /* ===== Touch (điều khiển P1) ===== */
-    let touchStartX=0,touchStartY=0; const SWIPE=20;
-    canvas.addEventListener("touchstart",e=>{ if(e.touches.length!==1) return; touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; },{passive:false});
-    canvas.addEventListener("touchmove",e=>{ e.preventDefault(); },{passive:false});
-    canvas.addEventListener("touchend",e=>{
-      if(!running||finished||countdownLock) return; if(e.changedTouches.length===0) return;
-      const dx=e.changedTouches[0].clientX-touchStartX, dy=e.changedTouches[0].clientY-touchStartY;
-      if(Math.abs(dx)>Math.abs(dy)){ if(dx> SWIPE) movePlayer(1,0); else if(dx<-SWIPE) movePlayer(-1,0); }
-      else { if(dy> SWIPE) movePlayer(0,1); else if(dy<-SWIPE) movePlayer(0,-1); }
-    },{passive:false});
+    let touchStartX = 0, touchStartY = 0; const SWIPE = 20;
+    canvas.addEventListener("touchstart", e => { if (e.touches.length !== 1) return; touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: false });
+    canvas.addEventListener("touchmove", e => { e.preventDefault(); }, { passive: false });
+    canvas.addEventListener("touchend", e => {
+      if (!running || finished || countdownLock) return; if (e.changedTouches.length === 0) return;
+      const dx = e.changedTouches[0].clientX - touchStartX, dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > Math.abs(dy)) { if (dx > SWIPE) movePlayer(1, 0); else if (dx < -SWIPE) movePlayer(-1, 0); }
+      else { if (dy > SWIPE) movePlayer(0, 1); else if (dy < -SWIPE) movePlayer(0, -1); }
+    }, { passive: false });
 
     /* ===== Move ===== */
-    function movePlayer(dx,dy){
-      const before={x:player.x,y:player.y}; tryMove(player,dx,dy);
-      if(before.x!==player.x||before.y!==player.y){
-        if(!t0Player) t0Player=performance.now();
-        if(!humanStarted){ humanStarted=true; startAiLoop(); }
-        if(checkFinishByPlayer()) return;
+    function movePlayer(dx, dy) {
+      const before = { x: player.x, y: player.y }; tryMove(player, dx, dy);
+      if (before.x !== player.x || before.y !== player.y) {
+        if (!t0Player) t0Player = performance.now();
+        if (!humanStarted) { humanStarted = true; startAiLoop(); }
+        if (checkFinishByPlayer()) return;
       }
     }
-    function movePlayer2(dx,dy){
-      const before={x:player2.x,y:player2.y}; tryMove(player2,dx,dy);
-      if(before.x!==player2.x||before.y!==player2.y){
-        if(!t0Player2) t0Player2=performance.now();
-        if(!humanStarted){ humanStarted=true; startAiLoop(); }
-        if(checkFinishByPlayer2()) return;
+    function movePlayer2(dx, dy) {
+      const before = { x: player2.x, y: player2.y }; tryMove(player2, dx, dy);
+      if (before.x !== player2.x || before.y !== player2.y) {
+        if (!t0Player2) t0Player2 = performance.now();
+        if (!humanStarted) { humanStarted = true; startAiLoop(); }
+        if (checkFinishByPlayer2()) return;
       }
     }
-    function tryMove(p,dx,dy){ const nx=p.x+dx, ny=p.y+dy; if(canMove(nx,ny)){ p.x=nx; p.y=ny; } }
+    function tryMove(p, dx, dy) { const nx = p.x + dx, ny = p.y + dy; if (canMove(nx, ny)) { p.x = nx; p.y = ny; } }
 
     /* ===== Init ===== */
-    function boot(){ resize(); resetGame(); openCharSelect(); }
+    function boot() { resize(); resetGame(); openCharSelect(); }
     boot();
   </script>
 </body>
+
 </html>
