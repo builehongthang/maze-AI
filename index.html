@@ -15,11 +15,8 @@
       radial-gradient(900px 600px at 10% 90%, rgba(0,0,0,.04), transparent 60%),
       #eef2ff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-    color:#111;
-    display:grid; place-items:center; min-height:100dvh;
-    overflow:hidden; /* chặn scroll gây co canvas */
+    color:#111; display:grid; place-items:center; min-height:100dvh; overflow:hidden;
   }
-
   .wrap{
     width:100dvw; height:100dvh; display:grid; place-items:center;
     background:
@@ -27,35 +24,24 @@
       radial-gradient(900px 500px at 10% 90%, rgba(37,99,235,.06), transparent 60%),
       transparent;
   }
-
   .row{ display:none !important; }
 
-  /* CHỈ JS set size; tránh CSS làm canvas tự co giãn */
- canvas{
-  display:block;
-  background:#fff;
-  border-radius:16px;
-  border:3px solid #16a34a;
-  box-shadow:0 30px 80px rgba(0,0,0,.35);
-  /* KHÔNG đặt width:100%/height:auto để tránh méo tỉ lệ */
-}
+  /* Canvas game */
+  canvas{ display:block; background:#fff; border-radius:16px; border:3px solid #16a34a;
+    box-shadow:0 30px 80px rgba(0,0,0,.35);
+  }
 
-
-
-  /* ===== Overlay: intro / countdown / kết quả ===== */
+  /* ===== Overlay ===== */
   .overlay{
-    position:fixed; inset:0;
-    background: rgba(2,6,23,.55);   /* tối trong suốt, KHÔNG có nền trắng */
+    position:fixed; inset:0; background: rgba(2,6,23,.55);
     display:none; align-items:center; justify-content:center; z-index:999;
     backdrop-filter: blur(2px);
   }
   .overlay.show{ display:flex; }
-
   .countdown{
     color:#fff; text-align:center; user-select:none;
     padding:24px 28px; border-radius:16px;
     background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
-    backdrop-filter: blur(12px);
     border:1px solid rgba(255,255,255,.28);
     box-shadow:0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.25);
   }
@@ -67,32 +53,57 @@
     color:#fff; text-align:left; user-select:none;
     padding:48px 56px; border-radius:28px;
     background: linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.10));
-    backdrop-filter: blur(16px);
     border:1px solid rgba(255,255,255,.35);
     box-shadow: 0 24px 80px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.35);
     display:inline-flex; align-items:center; gap:28px; max-width:95dvw;
   }
-  .intro-card .avatar{ width:180px; height:180px; object-fit:contain;
-    background:#111; border:4px solid #fff; border-radius:16px;
-    box-shadow:0 10px 30px rgba(0,0,0,.5);}
+  .intro-card .avatar{ width:300px; height:300px; object-fit:contain;
+    background:#111; border:4px solid #fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.5);}
   .intro-card .line1{ font-size:42px; font-weight:900; margin-bottom:14px; text-shadow:0 6px 24px rgba(0,0,0,.35); }
   .intro-card .line2{ font-size:26px; font-weight:800; color:#ffef7a;
     text-shadow:0 2px 8px rgba(0,0,0,.55); animation:pulse 1.6s infinite; }
   @keyframes pulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.04);opacity:.9}100%{transform:scale(1);opacity:1}}
 
-  .result-hero{ width:min(92dvw,520px); border-radius:20px; padding:22px;
+  /* ===== Result Popup ===== */
+  .result-hero{ width:min(92dvw,900px); border-radius:24px; padding:32px;
     color:#111; background:#fff; box-shadow:0 16px 48px rgba(0,0,0,.35); text-align:center; }
   .result-hero .ribbon{display:inline-flex; align-items:center; gap:10px; padding:8px 14px;
     border-radius:999px; font-weight:800; color:#fff; margin:0 auto 12px;}
   .result-hero .ribbon.win{background:linear-gradient(135deg,#22c55e,#16a34a)}
   .result-hero .ribbon.lose{background:linear-gradient(135deg,#f97316,#ef4444)}
   .result-hero .ribbon.draw{background:linear-gradient(135deg,#6366f1,#06b6d4)}
-  .result-hero .title{font-size:24px; font-weight:900; margin:2px 0 6px;}
-  .result-hero .times{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0 18px;}
-  .result-hero .pill{background:#f3f4f7; border-radius:999px; padding:10px 12px;
-    display:flex; align-items:center; justify-content:center; gap:8px; font-weight:600; font-size:14px;}
-  .result-hero .pill .dot{width:10px; height:10px; border-radius:50%;}
-  .result-hero .pill .t{background:#fff; padding:4px 8px; border-radius:999px; font-weight:800;}
+  .result-hero .title{font-size:24px; font-weight:900; margin:2px 0 12px;}
+
+  .result-hero .times{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:0 0 18px;
+  }
+  @media (max-width:640px){ .result-hero .times{ grid-template-columns:1fr; } }
+
+  .result-hero .pill{
+    background:#f8fafc; border-radius:16px;
+    padding:14px 12px; display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .result-hero .pill .who{ display:flex; align-items:center; gap:10px; font-weight:800; }
+  .result-hero .pill .avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;     /* vuông bo nhẹ, có thể đổi thành 0 để vuông hẳn */
+  object-fit: contain;    /* giữ nguyên tỉ lệ ảnh, không cắt mất */
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0,0,0,.10);
+}
+
+
+  .result-hero .pill .t{
+    background:#111; color:#fff; padding:8px 14px; border-radius:999px; font-weight:800; font-size:18px;
+  }
+  .result-hero .pill .t-pending{ background:#e8eef6; color:#334155; }
+
+  .score-winner{
+    box-shadow:0 0 0 3px #dcfce7 inset, 0 0 8px 2px #4ade80; background:#f6fffb !important;
+  }
+
   .result-hero .btns{display:flex; gap:10px; justify-content:center;}
   .result-hero .btns button{padding:10px 14px; border-radius:10px; font-weight:800; border:0; cursor:pointer;}
   .result-hero .btns .primary{background:#111; color:#fff;}
@@ -101,21 +112,22 @@
   .sparkle:after{content:"✨"; position:absolute; right:-8px; top:-8px; animation:twinkle 1.6s infinite ease-in-out;}
   @keyframes twinkle{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.6}}
 
-  /* Popup chọn nhân vật */
+  /* ===== Character select ===== */
   .char-select-overlay{ position:fixed; inset:0; display:none; z-index:998;
     align-items:center; justify-content:center; padding:20px;
     background:rgba(2,6,23,.55); backdrop-filter: blur(2px);}
   .char-select-overlay.show{ display:flex; }
-  .char-select-card{ width:min(96dvw,1080px); background:#ffffff; color:#111;
+  .char-select-card{ width:min(96dvw,1100px); background:#ffffff; color:#111;
     border-radius:24px; padding:24px 28px; box-shadow:0 22px 60px rgba(0,0,0,.30); }
-  .char-select-title{ font-size:26px; font-weight:900; margin:4px 0 18px; }
+  .char-select-title{ font-size:26px; font-weight:900; margin:4px 0 6px; }
+  .char-select-sub{ color:#4b5563; margin-bottom:18px; font-weight:600; }
   .char-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
   .char-item{ --accent:#3b82f6; background:#f8fafc; border:2px solid var(--accent);
     border-radius:18px; padding:16px; display:flex; flex-direction:column; align-items:center;
-    text-align:center; box-shadow:0 10px 26px rgba(0,0,0,.08); transition:transform .15s, box-shadow .15s; }
+    text-align:center; box-shadow:0 10px 26px rgba(0,0,0,.08); transition:transform .15s, box-shadow .15s; position:relative;}
   .char-item:hover{ transform:translateY(-3px); box-shadow:0 16px 40px rgba(0,0,0,.12); }
   .char-badge{ position:absolute; top:12px; left:12px; padding:6px 10px; border-radius:999px; font-weight:800; font-size:12px; color:#fff; background:var(--accent);}
-  .char-thumb{ width:100px; height:100px; object-fit:contain; background:#fff; border:4px solid #fff; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.12); margin:8px 0 12px;}
+  .char-thumb{ width:120px; height:120px; object-fit:contain; background:#fff; border:4px solid #fff; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.12); margin:8px 0 12px;}
   .char-lines{ width:100%;}
   .char-name{ font-size:20px; font-weight:900; margin-bottom:6px; color:#111; animation:namePulse 5s ease-in-out infinite;}
   .char-desc{ font-size:14px; line-height:1.45; font-weight:600; color:#374151; animation:descPulse 1.8s ease-in-out infinite;}
@@ -124,21 +136,55 @@
   @keyframes descPulse{0%,100%{transform:scale(1); color:#374151}50%{transform:scale(1.05); color:#f59e0b}}
 
   .dot{ display:inline-block; width:12px; height:12px; border-radius:50%; }
-  .blue{background:#1976d2}.red{background:#e53935}.gold{background:gold;border:1px solid #aa9300}
+  .blue{background:#1976d2}.red{background:#e53935}.purple{background:#7c3aed}.gold{background:gold;border:1px solid #aa9300}
 
-  .score-winner { background:#dcfce7 !important; box-shadow:0 0 8px 2px #4ade80; }
-
-  /* Confetti canvas: cố định, không chiếm chỗ layout */
-  canvas.confetti-canvas{
-    position:fixed !important; inset:0 !important;
-    width:100vw !important; height:100vh !important;
-    z-index:1; pointer-events:none !important;
+  /* gender chooser */
+  .dual-columns{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .dual-card{background:#f8fafc;border:2px solid #cbd5e1;border-radius:18px;padding:16px;box-shadow:0 10px 26px rgba(0,0,0,.06)}
+  .dual-title{display:inline-block;background:#111;color:#fff;border-radius:999px;padding:6px 10px;font-weight:800;font-size:12px}
+  .dual-name{font-size:22px;font-weight:900;margin:10px 0 2px;text-align:center}
+  .dual-keys{color:#a16207;font-weight:700;text-align:center;margin-bottom:10px}
+  .gender-row{display:flex;gap:10px;justify-content:center;margin-top:12px}
+  .gender-btn{flex:1;border:2px solid #3b82f6;background:#e0ecff;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}
+  .gender-btn.is-selected{background:#3b82f6;color:#fff}
+  .dual-thumb{
+    width:128px;height:128px;margin:14px auto 8px;
+    border:4px solid #fff;border-radius:18px;
+    background:#fff center/contain no-repeat;
+    box-shadow:0 8px 24px rgba(0,0,0,.12);
+    transition:transform .15s ease, box-shadow .15s ease, background-image .08s linear;
+    will-change:background-image;
   }
+  .dual-card:hover .dual-thumb{ transform:translateY(-2px); box-shadow:0 16px 36px rgba(0,0,0,.14); }
+
+  .dual-footer{display:flex;justify-content:flex-end;margin-top:16px}
+  .dual-continue{border:0;border-radius:12px;padding:12px 16px;font-weight:900;background:#111;color:#fff;opacity:.6}
+  .dual-continue.enabled{opacity:1;cursor:pointer}
+
+  .dual-card.p1 { border-color:#2563eb; background-color:#b1c1f5; }
+  .dual-card.p1 .dual-title { background:#2563eb; }
+  .dual-card.p1 .gender-btn { border-color:#2563eb; background:#e0ecff; }
+  .dual-card.p1 .gender-btn.is-selected { background:#2563eb; color:#fff; }
+
+  .dual-card.p2 { border-color:#7c3aed; background-color:#d1bdf5; }
+  .dual-card.p2 .dual-title { background:#7c3aed; }
+  .dual-card.p2 .gender-btn { border-color:#ede9fe; background:#e3ddff; }
+  .dual-card.p2 .gender-btn.is-selected { background:#7c3aed; color:#fff; }
+
+  canvas.confetti-canvas{ position:fixed !important; inset:0 !important; width:100vw !important; height:100vh !important;
+    z-index:1; pointer-events:none !important; }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="row"><div class="stats"><div><span class="dot blue"></span>Người chơi</div><div><span class="dot red"></span>"AI"</div><div><span class="dot gold"></span>Đích</div></div></div>
+    <div class="row">
+      <div class="stats">
+        <div><span class="dot blue"></span>Người chơi 1</div>
+        <div><span class="dot purple"></span>Người chơi 2</div>
+        <div><span class="dot red"></span>"AI"</div>
+        <div><span class="dot gold"></span>Đích</div>
+      </div>
+    </div>
     <canvas id="maze"></canvas>
     <div class="row">
       <div class="stats" id="status">Sẵn sàng!</div>
@@ -149,7 +195,9 @@
           <option value="normal" selected>Bình thường</option>
           <option value="hard">Khó</option>
         </select>
-        <span class="chip" id="rivalChip" title="Nhân vật sẽ chạy cùng bạn"><span class="dot red"></span><b>Đối thủ:</b>&nbsp;<span id="rivalName">—</span></span>
+        <span class="chip" id="rivalChip" title="Nhân vật sẽ chạy cùng bạn">
+          <span class="dot red"></span><b>Đối thủ:</b>&nbsp;<span id="rivalName">—</span>
+        </span>
         <button id="btnStart">Bắt đầu đua</button>
         <button id="btnShow" class="secondary">Hiện/Ẩn bước kế tiếp của AI</button>
       </div>
@@ -161,7 +209,10 @@
 
 <script>
 /* ========= Maze & Game ========= */
-const START_PLAYER={x:1,y:1}, START_AI={x:1,y:9};
+const START_PLAYER  = { x:1, y:1 };
+const START_PLAYER2 = { x:2, y:1 };
+const START_AI      = { x:1, y:9 };
+
 const MAZE=[
   [1,1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,1,0,0,0,0,0,0,1],
@@ -199,27 +250,42 @@ const charSelect=document.getElementById("charSelect");
 
 let ctx=canvas.getContext("2d"), DPR=1, TILE=48;
 const TILE_MIN=24, TILE_MAX=160;
-let player={...START_PLAYER}, ai={...START_AI};
+let player={...START_PLAYER}, player2={...START_PLAYER2}, ai={...START_AI};
+
 let running=false, aiTimer=null, showPath=false, finished=false;
-let t0Player=0,t0AI=0,tFinishPlayer=0,tFinishAI=0;
-let countdownLock=false, humanStarted=false;
+let t0Player=0,t0Player2=0,t0AI=0,tFinishPlayer=0,tFinishPlayer2=0,tFinishAI=0;
+let countdownLock=false, countdownAbort=false, humanStarted=false;
 let aiPlannedAction=null, aiNextCell=null;
 let PAD=24, OX=0, OY=0;
 
 /* Images */
-const playerImg=new Image(); playerImg.src="image/student.png";
+const playerMaleImg   = new Image(); playerMaleImg.src   = "image/student_male.png";
+const playerFemaleImg = new Image(); playerFemaleImg.src = "image/student_female.png";
 const aiImg=new Image();
-let playerImgOk=false, aiImgOk=false;
-playerImg.onload=()=>{playerImgOk=true; draw();};
-aiImg.onload=()=>{aiImgOk=true; draw();};
+let aiImgOk=false;
+
+/* Default genders */
+let playerGender = "male";
+let player2Gender = "male";
+
+/* helper: path for gender */
+const imgFor = g => g === "female" ? "image/student_female.png" : "image/student_male.png";
+
+[playerMaleImg,playerFemaleImg].forEach(im=>{ im.onload=()=>draw(); });
+aiImg.onload = ()=>{ aiImgOk=true; draw(); };
 
 applyDifficulty(diffSel.value||"normal");
 
 /* ===== Utils ===== */
-function findGoal(g){ for(let y=0;y<g.length;y++) for(let x=0;x<g[y].length;x++) if(g[y][x]===2) return {x,y}; return null; }
+function findGoal(g){
+  for(let y=0;y<g.length;y++)
+    for(let x=0;x<g[y].length;x++)
+      if(g[y][x]===2) return {x,y};
+  return null;
+}
 function canMove(x,y){ return !(y<0||y>=ROWS||x<0||x>=COLS) && MAZE[y][x]!==1; }
 
-/* ===== Draw helpers ===== */
+/* ===== Draw ===== */
 function roundRect(ctx, x, y, w, h, r = 8) {
   const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
@@ -230,6 +296,7 @@ function roundRect(ctx, x, y, w, h, r = 8) {
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
 }
+function currentSprite(gender){ return gender==="female" ? playerFemaleImg : playerMaleImg; }
 
 function draw(){
   const CANVAS_W = canvas.width  / DPR;
@@ -237,7 +304,7 @@ function draw(){
 
   ctx.clearRect(0,0, CANVAS_W, CANVAS_H);
 
-  // 1) Nền mê cung
+  // Maze
   for (let y=0; y<ROWS; y++){
     for (let x=0; x<COLS; x++){
       const v = MAZE[y][x];
@@ -246,9 +313,8 @@ function draw(){
     }
   }
 
-  // 2) Khung đích
-  const gx = OX + GOAL.x * TILE;
-  const gy = OY + GOAL.y * TILE;
+  // Goal frame + badge
+  const gx = OX + GOAL.x * TILE, gy = OY + GOAL.y * TILE;
   ctx.save();
   ctx.lineWidth = 6; ctx.strokeStyle = "#f59e0b";
   ctx.strokeRect(gx+3, gy+3, TILE-6, TILE-6);
@@ -256,7 +322,6 @@ function draw(){
   ctx.strokeRect(gx+6, gy+6, TILE-12, TILE-12);
   ctx.restore();
 
-  // 3) Badge "ĐÍCH ĐẾN"
   (function drawGoalBadge(){
     const label = "ĐÍCH ĐẾN";
     const fontPx = Math.max(14, Math.floor(TILE * 0.38));
@@ -293,16 +358,13 @@ function draw(){
     const radius = Math.max(10, Math.floor(badgeH * 0.35));
     roundRect(ctx, bx, by, badgeW, badgeH, radius);
     ctx.fill(); ctx.shadowBlur = 0;
-    roundRect(ctx, bx, by, badgeW, badgeH, radius);
-    ctx.stroke();
-    ctx.fillStyle = "#111";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
+    roundRect(ctx, bx, by, badgeW, badgeH, radius); ctx.stroke();
+    ctx.fillStyle = "#111"; ctx.textBaseline = "middle";
     ctx.fillText(label, bx + padX, by + badgeH / 2);
     ctx.restore();
   })();
 
-  // 4) Dấu bước AI
+  // Show AI planned step
   if (showPath && aiNextCell){
     ctx.save();
     ctx.lineWidth = 3; ctx.strokeStyle = "#e53935";
@@ -312,9 +374,12 @@ function draw(){
     ctx.restore();
   }
 
-  // 5) Nhân vật
-  drawSprite(player.x, player.y, playerImgOk ? playerImg : null, "#1976d2", { scale: 0.95, mode: "contain" });
-  drawSprite(ai.x,     ai.y,     aiImgOk     ? aiImg     : null, "#e53935", { scale: 1.15, mode: "contain" });
+  // Characters
+  const p1Img = currentSprite(playerGender);
+  const p2Img = currentSprite(player2Gender);
+  drawSprite(player.x,  player.y,  p1Img.complete ? p1Img : null, "#1976d2", { scale: 0.95, mode: "contain" });
+  drawSprite(player2.x, player2.y, p2Img.complete ? p2Img : null, "#7c3aed", { scale: 0.95, mode: "contain" });
+  drawSprite(ai.x,      ai.y,      aiImgOk ? aiImg : null,           "#e53935", { scale: 1.15, mode: "contain" });
 
   requestAnimationFrame(draw);
 }
@@ -338,21 +403,46 @@ function drawSprite(x,y,img,fallback,{scale=1,mode="contain"}={}){
 /* ===== RL ===== */
 const ACTIONS=[{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}];
 const Q=new Map(); const sk=p=>`${p.x},${p.y}`; function getQArr(s){ if(!Q.has(s)) Q.set(s,[0,0,0,0]); return Q.get(s); }
-const ALPHA=.5, GAMMA=.97; let EPSILON=.15; const EPS_MIN=.05, EPS_DECAY=.998; let TAU=1.10; const TAU_MIN=.30, TAU_DECAY=.997;
+const ALPHA=.5, GAMMA=.97; let EPSILON=.15; const EPS_MIN=.05; let TAU=1.10; const TAU_MIN=.30;
 const BASE_STEP_REWARD=-.02, SHAPE_SCALE=.45;
-function bfsDistanceToGoal(){ const d=Array.from({length:ROWS},_=>Array(COLS).fill(Infinity)); const q=[GOAL]; d[GOAL.y][GOAL.x]=0;
-  while(q.length){ const {x,y}=q.shift(); for(const {dx,dy} of ACTIONS){ const nx=x+dx, ny=y+dy; if(canMove(nx,ny)&&d[ny][nx]===Infinity){ d[ny][nx]=d[y][x]+1; q.push({x:nx,y:ny}); } } }
-  return d;}
-const DIST=bfsDistanceToGoal(); const phi=p=>{const d=DIST[p.y]?.[p.x]; return (d!==undefined&&isFinite(d))?-d:0;}
-;(function warmStart(){ const BOOST=.15, PENALTY=-.03;
-  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){ if(!canMove(x,y)) continue;
+
+function bfsDistanceToGoal(){
+  const d=Array.from({length:ROWS},_=>Array(COLS).fill(Infinity));
+  const q=[GOAL]; d[GOAL.y][GOAL.x]=0;
+  while(q.length){
+    const {x,y}=q.shift();
+    for(const {dx,dy} of ACTIONS){
+      const nx=x+dx, ny=y+dy;
+      if(canMove(nx,ny)&&d[ny][nx]===Infinity){ d[ny][nx]=d[y][x]+1; q.push({x:nx,y:ny}); }
+    }
+  } return d;
+}
+const DIST=bfsDistanceToGoal();
+const phi=p=>{const d=DIST[p.y]?.[p.x]; return (d!==undefined&&isFinite(d))?-d:0;}
+;(function warmStart(){
+  const BOOST=.15, PENALTY=-.03;
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+    if(!canMove(x,y)) continue;
     const s=sk({x,y}), q=getQArr(s), dHere=DIST[y][x];
-    for(let a=0;a<4;a++){ const nx=x+ACTIONS[a].dx, ny=y+ACTIONS[a].dy; if(!canMove(nx,ny)){ q[a]+=PENALTY; continue; }
-      const dNext=DIST[ny][nx]; if(isFinite(dHere)&&isFinite(dNext)){ if(dNext<dHere) q[a]+=BOOST; else if(dNext>dHere) q[a]+=PENALTY; } } }})();
+    for(let a=0;a<4;a++){
+      const nx=x+ACTIONS[a].dx, ny=y+ACTIONS[a].dy;
+      if(!canMove(nx,ny)){ q[a]+=PENALTY; continue; }
+      const dNext=DIST[ny][nx];
+      if(isFinite(dHere)&&isFinite(dNext)){
+        if(dNext<dHere) q[a]+=BOOST; else if(dNext>dHere) q[a]+=PENALTY;
+      }
+    }
+  }
+})();
 
 function validActions(p){ const A=[]; for(let a=0;a<4;a++){ const nx=p.x+ACTIONS[a].dx, ny=p.y+ACTIONS[a].dy; if(canMove(nx,ny)) A.push(a);} return A.length?A:[0,1,2,3]; }
-function softmaxSample(q,acts,tau){ let m=-Infinity; acts.forEach(a=>{if(q[a]>m)m=q[a];}); const exps=acts.map(a=>Math.exp((q[a]-m)/Math.max(1e-6,tau)));
-  const sum=exps.reduce((s,v)=>s+v,0); let r=Math.random()*sum; for(let i=0;i<acts.length;i++){ r-=exps[i]; if(r<=0) return acts[i]; } return acts[acts.length-1]; }
+function softmaxSample(q,acts,tau){
+  let m=-Infinity; acts.forEach(a=>{if(q[a]>m)m=q[a];});
+  const exps=acts.map(a=>Math.exp((q[a]-m)/Math.max(1e-6,tau)));
+  const sum=exps.reduce((s,v)=>s+v,0);
+  let r=Math.random()*sum; for(let i=0;i<acts.length;i++){ r-=exps[i]; if(r<=0) return acts[i]; }
+  return acts[acts.length-1];
+}
 function chooseAction(p){ const acts=validActions(p); if(Math.random()<EPSILON) return acts[Math.floor(Math.random()*acts.length)]; const q=getQArr(sk(p)); return softmaxSample(q,acts,TAU); }
 
 function stepEnv(pos,a,visit){
@@ -366,16 +456,19 @@ function planNextStep(){ const a=chooseAction(ai); return {a, next:{x:ai.x+ACTIO
 
 /* ===== Flow ===== */
 function resetGame(){
-  player={...START_PLAYER}; ai={...START_AI};
+  player={...START_PLAYER}; player2={...START_PLAYER2}; ai={...START_AI};
   running=false; finished=false;
   if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
   humanStarted=false;
-  t0Player=0; t0AI=0; tFinishPlayer=0; tFinishAI=0;
+  t0Player=0; t0Player2=0; t0AI=0; tFinishPlayer=0; tFinishPlayer2=0; tFinishAI=0;
   EPSILON=.15; TAU=1.10; aiPlannedAction=null; aiNextCell=null;
   statusEl && (statusEl.textContent="Sẵn sàng!");
   draw();
 }
-function startRace(){ running=true; statusEl && (statusEl.textContent=`GO! Bạn di chuyển trước • Đối thủ: ${settings.rival?.name||"AI"}`); draw(); }
+function startRace(){
+  running=true;
+  statusEl && (statusEl.textContent=`BẮT ĐẦU Người 1: ←↑→↓ • Người 2: W A S D • Đối thủ: ${settings.rival?.name||"AI"}`);
+}
 
 function startAiLoop(){
   if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
@@ -386,39 +479,59 @@ function startAiLoop(){
   if(showPath&&running&&!finished){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; } else { aiPlannedAction=null; aiNextCell=null; }
 
   aiTimer=setInterval(()=>{
+    if(countdownAbort){ clearInterval(aiTimer); aiTimer=null; return; }
     if(finished||!running){clearInterval(aiTimer); aiTimer=null; return;}
     if(showPath&&!aiNextCell){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; draw(); }
 
     for(let k=0;k<settings.aiStepsPerTick;k++){
       if(finished||!running) break;
-      let a; if(aiPlannedAction!==null){ a=aiPlannedAction; aiPlannedAction=null; } else { a=chooseAction(ai); }
+      const a = aiPlannedAction!==null ? aiPlannedAction : chooseAction(ai);
+      aiPlannedAction=null;
       const s=sk(ai); const {next,reward,done}=stepEnv(ai,a,visit); const s2=sk(next); updateQ(s,a,reward,s2);
-      ai=next; EPSILON=Math.max(.05,EPSILON*.998); TAU=Math.max(.30,TAU*.997);
+      ai=next; EPSILON=Math.max(EPS_MIN,EPSILON*.998); TAU=Math.max(TAU_MIN,TAU*.997);
 
       if(done){
         finished=true; running=false; clearInterval(aiTimer); aiTimer=null;
         if(!tFinishAI) tFinishAI=performance.now();
-        const tPlayer=(t0Player&&tFinishPlayer)?((tFinishPlayer-t0Player)/1000).toFixed(2):"—";
-        const tAI=(t0AI&&tFinishAI)?((tFinishAI-t0AI)/1000).toFixed(2):"—";
-        showResultPopup(false,true,tPlayer,tAI); break;
+        const tPlayer =(t0Player && tFinishPlayer )?((tFinishPlayer -t0Player )/1000).toFixed(2):"—";
+        const tPlayer2=(t0Player2&& tFinishPlayer2)?((tFinishPlayer2-t0Player2)/1000).toFixed(2):"—";
+        const tAI     =(t0AI     && tFinishAI    )?((tFinishAI     -t0AI     )/1000).toFixed(2):"—";
+        showResultPopup(false,true,false,tPlayer,tAI,tPlayer2);
+        break;
       }
     }
-    aiNextCell=null; draw();
+    aiNextCell=null;
   }, settings.speedAiMs);
 }
+
 function checkFinishByPlayer(){
   if(player.x===GOAL.x && player.y===GOAL.y){
     finished=true; running=false; if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
     if(!tFinishPlayer) tFinishPlayer=performance.now();
-    const tPlayer=(t0Player&&tFinishPlayer)?((tFinishPlayer-t0Player)/1000).toFixed(2):"—";
-    const tAI=(t0AI&&tFinishAI)?((tFinishAI-t0AI)/1000).toFixed(2):"—";
-    showResultPopup(true,false,tPlayer,tAI); return true;
+    const tPlayer =(t0Player && tFinishPlayer )?((tFinishPlayer -t0Player )/1000).toFixed(2):"—";
+    const tPlayer2=(t0Player2&& tFinishPlayer2)?((tFinishPlayer2-t0Player2)/1000).toFixed(2):"—";
+    const tAI     =(t0AI     && tFinishAI    )?((tFinishAI     -t0AI     )/1000).toFixed(2):"—";
+    showResultPopup(true,false,false,tPlayer,tAI,tPlayer2);
+    return true;
+  } return false;
+}
+function checkFinishByPlayer2(){
+  if(player2.x===GOAL.x && player2.y===GOAL.y){
+    finished=true; running=false; if(aiTimer){clearInterval(aiTimer); aiTimer=null;}
+    if(!tFinishPlayer2) tFinishPlayer2=performance.now();
+    const tPlayer =(t0Player && tFinishPlayer )?((tFinishPlayer -t0Player )/1000).toFixed(2):"—";
+    const tPlayer2=(t0Player2&& tFinishPlayer2)?((tFinishPlayer2-t0Player2)/1000).toFixed(2):"—";
+    const tAI     =(t0AI     && tFinishAI    )?((tFinishAI     -t0AI     )/1000).toFixed(2):"—";
+    showResultPopup(false,false,true,tPlayer,tAI,tPlayer2);
+    return true;
   } return false;
 }
 
 /* ===== Overlay flow ===== */
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
 async function showCountdownThenStart(){
+  countdownAbort=false;
   countdownLock=true; resetGame();
   const name=settings.rival?.name||"AI", trained=settings.rival?.trainedLabel||"một thời gian", imgSrc=settings.rival?.img||"image/ai.png";
   overlay.className="overlay show";
@@ -430,44 +543,61 @@ async function showCountdownThenStart(){
         <div class="line2">đã được huấn luyện trong ${trained}</div>
       </div>
     </div>`;
-  await sleep(4000);
+  await sleep(400); if(countdownAbort) return;
+  await sleep(2000); if(countdownAbort) return;
+
   overlay.innerHTML=`<div class="countdown"><div class="title">Sẵn sàng…</div><div class="number">3</div></div>`;
   const n=overlay.querySelector('.number'); const STEP_MS=1100;
-  n.textContent="3"; await sleep(STEP_MS);
-  n.textContent="2"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(STEP_MS);
-  n.textContent="1"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(STEP_MS);
-  n.textContent="GO!"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(650);
+  n.textContent="3"; await sleep(STEP_MS); if(countdownAbort) return;
+  n.textContent="2"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(STEP_MS); if(countdownAbort) return;
+  n.textContent="1"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(STEP_MS); if(countdownAbort) return;
+  n.textContent="BẮT ĐẦU"; n.style.animation="none"; n.offsetHeight; n.style.animation="pop .4s ease"; await sleep(650); if(countdownAbort) return;
   overlay.className="overlay"; countdownLock=false; startRace();
 }
 
-function showResultPopup(playerWin, aiWin, tPlayer, tAI) {
+/* ===== Result popup ===== */
+function showResultPopup(p1Win, aiWin, p2Win, tPlayer, tAI, tPlayer2) {
   const rivalName = settings?.rival?.name || "bạn 'AI'";
-  const outcome = playerWin && !aiWin ? "win" : (!playerWin && aiWin ? "lose" : "draw");
+  const outcome = (p1Win || p2Win) ? "win" : (aiWin ? "lose" : "draw");
 
-  let ribbonText = "", title = "", emoji = "";
-  if (outcome === "win") { ribbonText="Em thắng rồi!"; title="Quá đỉnh!"; emoji="🏆"; }
-  else if (outcome === "lose") { ribbonText=`${rivalName} thắng`; title="Không sao, thử lại nhé!"; emoji="🤖"; }
+  let ribbonText="", title="", emoji="";
+  if (outcome === "win") {
+    if (p1Win && p2Win) { ribbonText="Hai bạn cùng thắng!"; title="Đồng lòng phá đảo!"; emoji="👯‍♂️"; }
+    else if (p1Win)     { ribbonText="Người 1 thắng!";     title="Quá đỉnh!";         emoji="🏆"; }
+    else                { ribbonText="Người 2 thắng!";     title="Tuyệt vời!";        emoji="🏆"; }
+  } else if (outcome === "lose") { ribbonText=`${rivalName} thắng`; title="Không sao, thử lại nhé!"; emoji="🤖"; }
   else { ribbonText="Hoà"; title="Cân tài cân sức!"; emoji="⚖️"; }
 
   const timeDisplay = (t) => (t && t !== "—") ? `${t}s` : "Chưa hoàn thành";
+
+  // avatar theo lựa chọn & AI
+  const p1ImgSrc = imgFor(playerGender);
+  const p2ImgSrc = imgFor(player2Gender);
+  const aiImgSrc = settings?.rival?.img || "image/ai.png";
 
   overlay.className = "overlay show";
   overlay.innerHTML = `
   <div class="result-hero ${outcome === "win" ? "sparkle" : ""}">
     <div class="ribbon ${outcome}">${ribbonText} ${emoji}</div>
     <div class="title">${title}</div>
+
     <div class="times">
-      <div class="pill ${playerWin ? 'score-winner' : ''}">
-        <span class="dot blue"></span>
-        <span>Người</span>
-        <span class="t">${timeDisplay(tPlayer)}</span>
+      <div class="pill ${p1Win ? 'score-winner' : ''}">
+        <div class="who"><img class="avatar" src="${p1ImgSrc}" alt="P1"><span>Người chơi 1</span></div>
+        <div class="t ${tPlayer==='—' ? 't-pending':''}">${timeDisplay(tPlayer)}</div>
       </div>
+
       <div class="pill ${aiWin ? 'score-winner' : ''}">
-        <span class="dot red"></span>
-        <span>${settings?.rival?.name || "AI"}</span>
-        <span class="t">${timeDisplay(tAI)}</span>
+        <div class="who"><img class="avatar" src="${aiImgSrc}" alt="AI"><span>${settings?.rival?.name || "AI"}</span></div>
+        <div class="t ${tAI==='—' ? 't-pending':''}">${timeDisplay(tAI)}</div>
+      </div>
+
+      <div class="pill ${p2Win ? 'score-winner' : ''}">
+        <div class="who"><img class="avatar" src="${p2ImgSrc}" alt="P2"><span>Người chơi 2</span></div>
+        <div class="t ${tPlayer2==='—' ? 't-pending':''}">${timeDisplay(tPlayer2)}</div>
       </div>
     </div>
+
     <div class="btns">
       <button class="ghost" id="btnClose">Đóng</button>
       <button class="primary" id="btnReplay">Chơi lại</button>
@@ -477,12 +607,11 @@ function showResultPopup(playerWin, aiWin, tPlayer, tAI) {
   document.getElementById('btnClose').onclick = () => { overlay.className = "overlay"; };
   document.getElementById('btnReplay').onclick = () => { overlay.className = "overlay"; showCountdownThenStart(); };
 
-  if (outcome === "win") {
+  if (p1Win || p2Win) {
     const sparkleEl = overlay.querySelector(".sparkle");
     if (sparkleEl) sparkleEl.style.animation = "pop 1s ease";
     setTimeout(() => { sparkleEl?.classList.add("twinkle"); }, 800);
-
-    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
     const duration = 2000, end = Date.now() + duration;
     const itv = setInterval(() => {
       if (Date.now() > end) return clearInterval(itv);
@@ -491,53 +620,39 @@ function showResultPopup(playerWin, aiWin, tPlayer, tAI) {
   }
 }
 
-function resize(){
-  const VW = window.innerWidth;
-  const VH = window.innerHeight;
-  const MARGIN = 32;                 // khoảng chừa viền ngoài
-  const maxW = VW - MARGIN;
-  const maxH = VH - MARGIN;
 
-  // Tìm TILE lớn nhất sao cho canvas lọt vừa viewport
+/* ===== Responsive canvas ===== */
+function resize(){
+  const VW = window.innerWidth, VH = window.innerHeight, MARGIN = 32;
+  const maxW = VW - MARGIN, maxH = VH - MARGIN;
+
   function fit(maxW, maxH){
-    let tile = TILE_MAX;
-    let pad, w, h;
+    let tile = TILE_MAX; let pad, w, h;
     while (tile >= TILE_MIN){
       pad = Math.max(24, Math.floor(tile * 1.1));
-      w = COLS * tile + pad * 2;
-      h = ROWS * tile + pad * 2;
+      w = COLS * tile + pad * 2; h = ROWS * tile + pad * 2;
       if (w <= maxW && h <= maxH) break;
       tile--;
     }
     return { tile: Math.max(tile, TILE_MIN), pad, w, h };
   }
-
   const { tile, pad, w, h } = fit(maxW, maxH);
-  TILE = tile;
-  PAD  = pad;
+  TILE = tile; PAD = pad;
 
-  // Kích thước canvas hiển thị (CSS px)
-  const cssW = w;
-  const cssH = h;
-
-  // Kích thước vẽ thật (device pixels)
+  const cssW = w, cssH = h;
   DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
   canvas.style.width  = cssW + "px";
   canvas.style.height = cssH + "px";
   canvas.width  = Math.floor(cssW * DPR);
   canvas.height = Math.floor(cssH * DPR);
 
-  // Gốc vẽ mê cung
-  OX = PAD;
-  OY = PAD;
-
+  OX = PAD; OY = PAD;
   ctx = canvas.getContext("2d");
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   draw();
 }
 
-
-/* ===== Character select ===== */
+/* ===== Character select (2 bước: AI -> P1&P2) ===== */
 function setDifficulty(mode){
   const p=DIFFICULTY_PRESETS[mode]||DIFFICULTY_PRESETS.normal;
   settings={...p};
@@ -545,32 +660,101 @@ function setDifficulty(mode){
   localStorage.setItem('maze:difficulty',mode);
   applyDifficulty(mode);
 }
-function renderCharSelect(){
-  const modes=['easy','normal','hard'];
+
+function renderCharSelect(step="ai"){
+  if(step==="ai"){
+    const modes=['easy','normal','hard'];
+    charSelect.innerHTML=`<div class="char-select-card">
+      <div class="char-select-title">Bước 1/2 – Chọn bạn 'AI' để thi đấu</div>
+      <div class="char-select-sub">Rùa (dễ), Thỏ (bình thường), Sói (khó)</div>
+      <div class="char-grid">
+        ${modes.map(m=>{
+          const r=DIFFICULTY_PRESETS[m].rival, meta=MODE_META[m];
+          return `<div class="char-item" style="--accent:${meta.color};">
+            <div class="char-badge">${meta.label}</div>
+            <img class="char-thumb" src="${r.img}" alt="${r.name}" onerror="this.style.display='none'"/>
+            <div class="char-lines">
+              <div class="char-name">${r.name}</div>
+              <div class="char-desc">Đã được huấn luyện trong ${r.trainedLabel}</div>
+            </div>
+            <button class="char-choose" data-next="both" data-mode="${m}">Chọn</button>
+          </div>`}).join('')}
+      </div></div>`;
+    return;
+  }
+
+  // Bước 2
   charSelect.innerHTML=`<div class="char-select-card">
-    <div class="char-select-title">Chọn 1 bạn 'AI' để thi đấu THOÁT KHỎI MÊ CUNG</div>
-    <div class="char-grid">
-      ${modes.map(m=>{
-        const r=DIFFICULTY_PRESETS[m].rival, meta=MODE_META[m];
-        return `<div class="char-item" style="--accent:${meta.color}; position:relative;">
-          <div class="char-badge">${meta.label}</div>
-          <img class="char-thumb" src="${r.img}" alt="${r.name}" onerror="this.style.display='none'"/>
-          <div class="char-lines">
-            <div class="char-name">${r.name}</div>
-            <div class="char-desc">Đã được huấn luyện trong ${r.trainedLabel}</div>
-          </div>
-          <button class="char-choose" data-mode="${m}">Chọn</button>
-        </div>`}).join('')}
-    </div></div>`;
+    <div class="char-select-title">Bước 2/2 – Chọn người chơi 1 & 2</div>
+    <div class="char-select-sub">Giới tính nhân vật học sinh • Chọn xong cả hai rồi bấm <b>Bắt đầu</b></div>
+
+    <div class="dual-columns">
+      <div class="dual-card p1" data-player="p1">
+        <span class="dual-title">Người 1</span>
+        <div class="dual-name">${playerGender==="female"?"Nữ":"Nam"}</div>
+        <div class="dual-keys">Phím: ← ↑ → ↓</div>
+        <div class="dual-thumb" data-preview="p1" style="background-image:url('${imgFor(playerGender)}')"></div>
+        <div class="gender-row">
+          <button class="gender-btn ${playerGender!=="female"?"is-selected":""}" data-player="p1" data-g="male">Nam</button>
+          <button class="gender-btn ${playerGender==="female"?"is-selected":""}" data-player="p1" data-g="female">Nữ</button>
+        </div>
+      </div>
+
+      <div class="dual-card p2" data-player="p2">
+        <span class="dual-title">Người 2</span>
+        <div class="dual-name">${player2Gender==="female"?"Nữ":"Nam"}</div>
+        <div class="dual-keys">Phím: W A S D</div>
+        <div class="dual-thumb" data-preview="p2" style="background-image:url('${imgFor(player2Gender)}')"></div>
+        <div class="gender-row">
+          <button class="gender-btn ${player2Gender!=="female"?"is-selected":""}" data-player="p2" data-g="male">Nam</button>
+          <button class="gender-btn ${player2Gender==="female"?"is-selected":""}" data-player="p2" data-g="female">Nữ</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dual-footer">
+      <button class="dual-continue ${playerGender && player2Gender ? "enabled":""}" data-action="start">Bắt đầu</button>
+    </div>
+  </div>`;
 }
-function openCharSelect(){ renderCharSelect(); charSelect.className='char-select-overlay show'; }
+
+function openCharSelect(){ renderCharSelect("ai"); charSelect.className='char-select-overlay show'; }
 charSelect.addEventListener('click',e=>{ if(e.target===charSelect) charSelect.className='char-select-overlay'; });
+
 charSelect.addEventListener('click',e=>{
-  const btn=e.target.closest('.char-choose'); if(!btn) return;
-  const mode=btn.getAttribute('data-mode'); setDifficulty(mode);
-  charSelect.className='char-select-overlay';
-  if(!countdownLock) showCountdownThenStart();
+  const btn=e.target.closest('button'); if(!btn) return;
+
+  // Bước 1: chọn AI
+  const mode = btn.getAttribute('data-mode');
+  const next = btn.getAttribute('data-next');
+  if(mode){ setDifficulty(mode); renderCharSelect(next || "both"); return; }
+
+  // Bước 2: chọn giới tính cho P1/P2
+  const playerId = btn.getAttribute('data-player');
+  const gender   = btn.getAttribute('data-g');
+  if(playerId && gender){
+    if(playerId==="p1"){ playerGender = gender; }
+    if(playerId==="p2"){ player2Gender = gender; }
+
+    const card = charSelect.querySelector(`.dual-card[data-player="${playerId}"]`);
+    card.querySelectorAll('.gender-btn').forEach(b=>b.classList.remove('is-selected'));
+    btn.classList.add('is-selected');
+    card.querySelector('.dual-name').textContent = (gender==="female"?"Nữ":"Nam");
+    card.querySelector(`.dual-thumb[data-preview="${playerId}"]`).style.backgroundImage = `url('${imgFor(gender)}')`;
+
+    const startBtn = charSelect.querySelector('.dual-continue');
+    if(playerGender && player2Gender){ startBtn.classList.add('enabled'); }
+    return;
+  }
+
+  // Bắt đầu
+  if(btn.getAttribute('data-action')==="start"){
+    if(!(playerGender && player2Gender)) return;
+    charSelect.className='char-select-overlay';
+    if(!countdownLock) showCountdownThenStart();
+  }
 });
+
 function applyDifficulty(mode){
   const p=DIFFICULTY_PRESETS[mode]||DIFFICULTY_PRESETS.normal;
   settings={...p};
@@ -578,26 +762,44 @@ function applyDifficulty(mode){
   aiImgOk=false; aiImg.src=settings.rival?.img || "image/angry.png";
 }
 
-/* ===== Inputs ===== */
+/* ===== Nút UI ===== */
 btnStart && btnStart.addEventListener("click", ()=>{ if(!countdownLock) openCharSelect(); });
-btnShow && btnShow.addEventListener("click", ()=>{ showPath=!showPath; if(showPath&&running&&!finished){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; } else { aiNextCell=null; aiPlannedAction=null; } draw(); });
-diffSel && diffSel.addEventListener('change', e=>{ const mode=e.target.value; setDifficulty(mode); if(aiTimer) startAiLoop(); draw(); });
+btnShow && btnShow.addEventListener("click", ()=>{
+  showPath=!showPath;
+  if(showPath&&running&&!finished){ const plan=planNextStep(); aiPlannedAction=plan.a; aiNextCell=plan.next; }
+  else { aiNextCell=null; aiPlannedAction=null; }
+});
+diffSel && diffSel.addEventListener('change', e=>{ const mode=e.target.value; setDifficulty(mode); if(aiTimer) startAiLoop(); });
 
+/* ===== Phím điều khiển & Reset ===== */
+function gotoStep1(){
+  countdownAbort=true; countdownLock=false;
+  if(aiTimer){ clearInterval(aiTimer); aiTimer=null; }
+  overlay.className="overlay";
+  resetGame();
+  renderCharSelect("ai");
+  charSelect.className='char-select-overlay show';
+}
 document.addEventListener("keydown", (e)=>{
-  if(e.key==="r"||e.key==="R"){ e.preventDefault?.();
-    if(!countdownLock){ resetGame(); openCharSelect(); overlay.className="overlay"; }
-    return;
-  }
+  if(e.key==="r"||e.key==="R"){ e.preventDefault?.(); gotoStep1(); return; }
   if(!running||finished||countdownLock) return;
-  if(e.key==="ArrowUp"){e.preventDefault?.(); movePlayer(0,-1)}
-  if(e.key==="ArrowDown"){e.preventDefault?.(); movePlayer(0, 1)}
-  if(e.key==="ArrowLeft"){e.preventDefault?.(); movePlayer(-1,0)}
-  if(e.key==="ArrowRight"){e.preventDefault?.(); movePlayer(1, 0)}
+
+  // P1: Arrow keys
+  if(e.key==="ArrowUp"){e.preventDefault?.(); movePlayer(0,-1); return; }
+  if(e.key==="ArrowDown"){e.preventDefault?.(); movePlayer(0, 1); return; }
+  if(e.key==="ArrowLeft"){e.preventDefault?.(); movePlayer(-1,0); return; }
+  if(e.key==="ArrowRight"){e.preventDefault?.(); movePlayer(1, 0); return; }
+
+  // P2: WASD
+  if(e.key==="w"||e.key==="W"){ e.preventDefault?.(); movePlayer2(0,-1); return; }
+  if(e.key==="s"||e.key==="S"){ e.preventDefault?.(); movePlayer2(0, 1); return; }
+  if(e.key==="a"||e.key==="A"){ e.preventDefault?.(); movePlayer2(-1,0); return; }
+  if(e.key==="d"||e.key==="D"){ e.preventDefault?.(); movePlayer2( 1, 0); return; }
 });
 
 window.addEventListener("resize", resize);
 
-/* Touch */
+/* ===== Touch (điều khiển P1) ===== */
 let touchStartX=0,touchStartY=0; const SWIPE=20;
 canvas.addEventListener("touchstart",e=>{ if(e.touches.length!==1) return; touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; },{passive:false});
 canvas.addEventListener("touchmove",e=>{ e.preventDefault(); },{passive:false});
@@ -608,20 +810,28 @@ canvas.addEventListener("touchend",e=>{
   else { if(dy> SWIPE) movePlayer(0,1); else if(dy<-SWIPE) movePlayer(0,-1); }
 },{passive:false});
 
-/* Move */
+/* ===== Move ===== */
 function movePlayer(dx,dy){
   const before={x:player.x,y:player.y}; tryMove(player,dx,dy);
   if(before.x!==player.x||before.y!==player.y){
     if(!t0Player) t0Player=performance.now();
     if(!humanStarted){ humanStarted=true; startAiLoop(); }
-    if(checkFinishByPlayer()){ draw(); return; }
-    draw();
+    if(checkFinishByPlayer()) return;
+  }
+}
+function movePlayer2(dx,dy){
+  const before={x:player2.x,y:player2.y}; tryMove(player2,dx,dy);
+  if(before.x!==player2.x||before.y!==player2.y){
+    if(!t0Player2) t0Player2=performance.now();
+    if(!humanStarted){ humanStarted=true; startAiLoop(); }
+    if(checkFinishByPlayer2()) return;
   }
 }
 function tryMove(p,dx,dy){ const nx=p.x+dx, ny=p.y+dy; if(canMove(nx,ny)){ p.x=nx; p.y=ny; } }
 
-/* Init */
-resize(); resetGame(); openCharSelect();
+/* ===== Init ===== */
+function boot(){ resize(); resetGame(); openCharSelect(); }
+boot();
 </script>
 </body>
 </html>
